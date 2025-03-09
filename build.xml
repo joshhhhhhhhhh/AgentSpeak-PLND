@@ -13,22 +13,31 @@
     </description>
 
 	<property name="build.dir" value="${basedir}/bin" />
-	<property name="build.test.dir" value="${project.dir}/bin/tests" />
+	<property name="build.test.dir" value="${basedir}/bin/tests" />
 	<property name="peleusJar" value="${basedir}/lib/peleus.jar" />
 
 	<property name="jasonJar" value="${basedir}/lib/jason.jar" />
 	<property name="jasonEnvJar" value="${basedir}/lib/jasonenv.jar" />
-
+	<property name="jplanJar" value="${basedir}/lib/jplan.jar" />
+	<property name="javagpJar" value="${basedir}/lib/javagp.jar" />
+	<property name="jemplanJar" value="${basedir}/lib/jemplan.jar" />
 
 	<property name="dist.properties" value="${basedir}/bin/dist.properties" />
 	<property name="version" value="1.0" />
 	<property name="release" value="1" />
-	<property name="Peleus.project" value="Peleus.mas2j" />
+
+	<property name="examples.dir" value="${basedir}/examples" />
+	<property name="Peleus.project" value="${examples.dir}/Peleus.mas2j" />
+
 
 	<path id="run.classpath">
 		<pathelement location="${build.dir}" />
 		<pathelement location="${jasonJar}" />
 		<pathelement location="${jasonEnvJar}" />
+		<pathelement location="${jplanJar}" />
+		<pathelement location="${javagpJar}" />
+		<pathelement location="${jemplanJar}" />
+		<pathelement location="${examples.dir}" />
 	</path>
 
 	<path id="project.classpath">
@@ -87,7 +96,7 @@
           target: run              
          ================================= -->
 	<target name="Peleus" depends="build" description="--> Runs Peleus">
-		<java classname="jason.infra.centralised.RunCentralisedMAS" failonerror="true" fork="yes">
+		<java classname="jason.infra.centralised.RunCentralisedMAS" failonerror="true" fork="yes" dir="${examples.dir}">
 			<classpath refid="project.classpath" />
 			<arg file="${Peleus.project}" />
 		</java>

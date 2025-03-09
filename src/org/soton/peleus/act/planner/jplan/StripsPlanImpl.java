@@ -12,7 +12,7 @@ import java.io.InputStreamReader;
 import org.soton.peleus.act.planner.StripsPlan;
 
 public class StripsPlanImpl extends StripsPlan {
-	
+
 	public StripsPlanImpl(byte stripsPlan[]) {
 		super(stripsPlan);
 	}
@@ -20,12 +20,13 @@ public class StripsPlanImpl extends StripsPlan {
 	@Override
 	public Plan toAgentSpeakPlan(int planSequence) {
 		StringBuffer sbNewPlan = new StringBuffer();
-		sbNewPlan.append("+!executePlan(plan"+(planSequence)+") : true");
+		sbNewPlan.append("+!executePlan(plan" + (planSequence) + ") : true ");
 		sbNewPlan.append(System.getProperty("line.separator"));
 		sbNewPlan.append("  <- ");
-		
+		sbNewPlan.append(".print(\"executing...\");");
+		System.out.println("Body: " + this.convertPlanBody());
 		sbNewPlan.append(this.convertPlanBody());
-		
+
 		return Plan.parse(sbNewPlan.toString());
 	}
 

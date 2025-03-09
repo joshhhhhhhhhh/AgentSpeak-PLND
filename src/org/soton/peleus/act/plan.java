@@ -39,34 +39,34 @@ import org.soton.peleus.act.planner.jplan.JPlanPlannerConverter;
  * plans in the agent's <code>PlanLibrary</code> into a planning problem 
  * to create a new high-level plan. This plan is then added to the plan
  * library and adopted as a new intention by the agent.
- *  
+ *
  * @author  Felipe Meneguzzi
  */
 @SuppressWarnings("serial")
 public class plan extends DefaultInternalAction {
 	protected PlannerConverter plannerConverter;
-	
+
 	protected static final Term trueTerm = Pred.LTrue;
 	protected static final Term remote = ASSyntax.createAtom("remote");
-	
+
 	protected int planNumber = 0;
 
 	//@SuppressWarnings("unused")
 	private Logger logger = Logger.getLogger(InternalAction.class.getName());
-	
+
 	/**
 	 * Default constructor
 	 */
 	public plan() {
-		plannerConverter = createPlannerConverter("emplan");
-		//plannerConverter = createPlannerConverter("javagp");
+		//plannerConverter = createPlannerConverter("emplan");
+		plannerConverter = createPlannerConverter("jplan"); //javagp
 	}
-	
+
 	public boolean suspendIntention() {
 		// TODO Auto-generated method stub
 		return false;
 	}
-	
+
 	/**
 	 * Returns the regular expression that selects the plans
 	 * that will be used in composing a new plan
@@ -75,19 +75,19 @@ public class plan extends DefaultInternalAction {
 	protected String getPlanSelector() {
 		return "action(.)*";
 	}
-	
+
 	/**
-	 * Instantiates a planner converter based on the supplied planner 
+	 * Instantiates a planner converter based on the supplied planner
 	 * selection string.
-	 * 
+	 *
 	 * TODO Perhaps I should do this instantiation using reflection.
-	 * 
+	 *
 	 * @param plannerName
 	 * @return
 	 */
 	protected PlannerConverter createPlannerConverter(String plannerName) {
 		PlannerConverter converter = null;
-		
+
 		if(plannerName == "emplan") {
 			converter = new EMPlanPlannerConverter();
 		} else if (plannerName == "jplan") {
@@ -97,10 +97,10 @@ public class plan extends DefaultInternalAction {
 		} else {
 			converter = new JavaGPPlannerConverter();
 		}
-		
+
 		return converter;
 	}
-	
+
 	/**
 	 * Ignore plans that are not marked with the action annotation
 	 * @param plans
@@ -116,11 +116,11 @@ public class plan extends DefaultInternalAction {
 		}
 		return plans;
 	}
-	
+
 	/**
-	 * Extracts the literals in the belief base to be used 
+	 * Extracts the literals in the belief base to be used
 	 * as the initial state for the planning problem
-	 * 
+	 *
 	 * @param beliefBase
 	 * @return
 	 */
@@ -131,12 +131,12 @@ public class plan extends DefaultInternalAction {
 			//Modified to filter out perceptions and rely only on beliefs
 			Literal belief = beliefsIterator.next();
 			//if(belief.getAnnots().contains(BeliefBase.TSelf)) {
-				beliefs.add(belief);
+			beliefs.add(belief);
 			//}
 		}
 		return beliefs;
 	}
-	
+
 	/**
 	 * Invokes the external planner.
 	 * @param beliefs
@@ -148,18 +148,18 @@ public class plan extends DefaultInternalAction {
 	protected boolean invokePlanner(List<Literal> beliefs,
 									List<Term> goals,
 									List<Plan> plans,
-			                        int maxPlanSteps) {
+									int maxPlanSteps) {
 		plannerConverter.createPlanningProblem(beliefs, plans, goals);
-		
+
 		ProblemObjects objects = plannerConverter.getProblemObjects();
 		StartState startState = plannerConverter.getStartState();
 		GoalState goalState = plannerConverter.getGoalState();
 		ProblemOperators operators = plannerConverter.getProblemOperators();
-		
+
 		//Invoke the planner with the generated planning problem
 		return plannerConverter.executePlanner(objects, startState, goalState, operators, maxPlanSteps);
 	}
-	
+
 	/**
 	 * Converts the last plan into an AgentSpeak representation
 	 * And add the appropriate modifications to it.
@@ -168,28 +168,33 @@ public class plan extends DefaultInternalAction {
 	 * @return
 	 */
 	protected Plan convertPlan(boolean makeGeneric, boolean makeAtomic, boolean makeRemote) {
+
+		logger.info("convertPlan("+makeGeneric+","+makeAtomic+","+makeRemote+")");
+
 		Plan plan = plannerConverter.getAgentSpeakPlan(makeGeneric);
-		
+
 		String atomic = "";
 		String remote = "";
-		
+
 		if(makeAtomic) {
 			atomic = "atomic";
 			if(makeRemote) {
 				atomic+=",";
 			}
 		}
-		
+
 		if(makeRemote) {
 			remote = "remote";
 		}
-		
-		//plan.setLabel(Pred.parsePred(plan.getTriggerEvent().getLiteral().getTerm(0)+"[atomic]"));
-		plan.setLabel(Pred.parsePred("plan"+(planNumber++)+"["+atomic+remote+"]"));
-		
+
+		logger.info("convertPlan: "+atomic+", "+remote);
+
+		plan.setLabel(Pred.parsePred(plan.getTrigger().getLiteral().getTerm(0)+"[atomic]"));
+		//plan.setLabel(Pred.parsePred("plan"+(planNumber++)+"["+atomic+remote+"]"));
+
 		return plan;
 	}
-	
+
 	/**
 	 * Adds the new plan to the intention structure to execute it
 	 * @param plan
@@ -199,18 +204,20 @@ public class plan extends DefaultInternalAction {
 	protected void executeNewPlan(Plan plan, TransitionSystem ts) throws JasonException {
 		logger.info("Adding new plan: "+System.getProperty("line.separator")+plan);
 		ts.getAg().getPL().add(plan,true);
-		
+
 		Trigger trigger = plan.getTrigger();
 		logger.info("Invoking plan "+planNumber);
-		//ts.getC().addAchvGoal(Literal.parseLiteral("executePlan(plan"+(planNumber++)+")"), null);
+		ts.getC().addAchvGoal(Literal.parseLiteral("executePlan(plan"+planNumber+")"), null);
 		// Now we are adding the new goal to the current intention
-		ts.getC().addAchvGoal(trigger.getLiteral(), ts.getC().getSelectedIntention());
+		//ts.getC().addAchvGoal(trigger.getLiteral(), ts.getC().getSelectedIntention());
+		planNumber++; //TODO: Convert and execute must be done in sequence
 	}
 
 	//@SuppressWarnings("unchecked")
 	public Object execute(TransitionSystem ts, Unifier un, Term[] args)
 			throws Exception {
-		
+
+		logger.info("args[0]: "+args[0]+" / args[1]: "+args[1]);
 		//First check that the action was properly invoked with an AgentSpeak
 		//list as its parameter.
 		if(args.length < 1) {
@@ -221,7 +228,7 @@ public class plan extends DefaultInternalAction {
 			logger.info("plan action requires a list of literals as its parameter");
 			return false;
 		}
-		
+
 		//The second optional parameter is a list of options for the
 		//planner
 		if(args.length > 2) {
@@ -232,7 +239,7 @@ public class plan extends DefaultInternalAction {
 			logger.info("plan action requires a list as its second parameter");
 			return false;
 		}
-		
+
 		ListTerm listTerm = (ListTerm) args[0];
 		List<Term> goals = listTerm.getAsList();
 		ListTerm plannerParams = (ListTerm) args[1];
@@ -243,7 +250,7 @@ public class plan extends DefaultInternalAction {
 		//Whether or not to use remote operators
 		boolean useRemote = false;
 		String plannerName = null;
-		
+
 		for(int i=0; i<params.size(); i++) {
 			Structure param = (Structure) params.get(i);
 			if(param.getFunctor().equals("maxSteps")) {
@@ -259,35 +266,42 @@ public class plan extends DefaultInternalAction {
 				plannerName = param.getTerm(0).toString();
 			}
 		}
-		
+
 		//If the planner(X) parameter was specified
 		//select another planner converter
 		if(plannerName != null) {
+			logger.info("PlannerName: "+plannerName);
 			PlannerConverter converter = createPlannerConverter(plannerName);
 			if(converter != null) {
 				this.plannerConverter = converter;
 			}
 		}
-		
+
 		//Extract the literals in the belief base to be used
 		//as the initial state for the planning problem
 		BeliefBase beliefBase = ts.getAg().getBB();
 		List<Literal> beliefs = selectRelevantBeliefs(beliefBase);
-		
+		logger.info("beliefBase: "+beliefBase);
+
 		//Extract the plans from the plan library to generate
 		//STRIPS operators in the conversion process
 		PlanLibrary planLibrary = ts.getAg().getPL();
 		List<Plan> plans = planLibrary.getPlans();
 		plans = selectUseablePlans(plans, useRemote);
-		
+		logger.info("planLibrary: "+planLibrary);
+
 		//Invoke the planner
 		boolean planFound = invokePlanner(beliefs, goals, plans, maxPlanSteps);
-		
-		if(!planFound)
+
+		if(!planFound) {
+			logger.info("Plan not Found!!!");
 			return false;
-		
+		}
+
+		logger.info("Converting plan...");
 		Plan plan = convertPlan(makeGeneric, makeAtomic, useRemote);
-		
+
+		logger.info("Executing plan...");
 		executeNewPlan(plan, ts);
 
 		return true;
