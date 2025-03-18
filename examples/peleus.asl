@@ -36,7 +36,7 @@ des([on(b3, table), on(b2, b3), on(b1, b2)]).
 
 -!checkGoals([H|T]) : true <- .print("Failure.").
 
-@action1(block, block)[] +!moveToTable (Block, From) :
+@action1[type(Block, block, perm), type(From, block, temp)] +!moveToTable (Block, From) :
 	Block \== From & Block \== table &
 	From \== table & clear(Block) & on(Block, From) <-
 	-on(Block, From);
@@ -44,7 +44,7 @@ des([on(b3, table), on(b2, b3), on(b1, b2)]).
     +clear(From);
     .print("Now ", Block, " is on the table. ",From, " is clear.").
 
-@action2(block, block, block) +!move(Block, From, To) :
+@action2[type(Block, block, perm), type(From, block, temp), type(To, block, perm)] +!move(Block, From, To) :
 	Block \== From & Block \== To &
 	From \== To & To \== table &
 	on(Block, From) & clear(Block) &

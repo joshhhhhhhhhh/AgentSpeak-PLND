@@ -24,11 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
 
-import org.soton.peleus.act.planner.GoalState;
-import org.soton.peleus.act.planner.PlannerConverter;
-import org.soton.peleus.act.planner.ProblemObjects;
-import org.soton.peleus.act.planner.ProblemOperators;
-import org.soton.peleus.act.planner.StartState;
+import org.soton.peleus.act.planner.*;
 import org.soton.peleus.act.planner.javagp.JavaGPPlannerConverter;
 import org.soton.peleus.act.planner.jemplan.EMPlanPlannerConverter;
 import org.soton.peleus.act.planner.jplan.JPlanPlannerConverter;
@@ -155,6 +151,9 @@ public class plan extends DefaultInternalAction {
 		StartState startState = plannerConverter.getStartState();
 		GoalState goalState = plannerConverter.getGoalState();
 		ProblemOperators operators = plannerConverter.getProblemOperators();
+
+		AgentSpeakToPDDL pddlTest = new AgentSpeakToPDDL();
+		pddlTest.generatePDDL(objects, startState, goalState, operators);
 
 		//Invoke the planner with the generated planning problem
 		return plannerConverter.executePlanner(objects, startState, goalState, operators, maxPlanSteps);
