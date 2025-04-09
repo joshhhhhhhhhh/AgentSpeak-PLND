@@ -218,7 +218,12 @@ public class JPlanPlannerConverter implements PlannerConverter {
 		
 		return sb.toString();
 	}
-	
+
+	@Override
+	public List<Plan> getContingencyPlan() {
+		return List.of();
+	}
+
 	public String toStripsString(PlanBody planBody) {
 		StringBuffer sb = new StringBuffer();
 		

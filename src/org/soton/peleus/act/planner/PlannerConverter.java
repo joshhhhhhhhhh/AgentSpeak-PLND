@@ -130,4 +130,7 @@ public interface PlannerConverter {
 	public String toStripsString(Term term);
 
 	public String toStripsString(RelExpr expr);
+
+	public List<Plan> getContingencyPlan();
+
 }

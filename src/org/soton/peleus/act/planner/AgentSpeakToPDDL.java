@@ -34,6 +34,14 @@ public class AgentSpeakToPDDL {
         }
     }
 
+    //ONEOF SYNTAX:
+    //ONEOF_START
+    //(first set of options)
+    //ONEOF_BREAK
+    //(second/third set of options)
+    //ONEOF_END
+    //CANNOT NEST ONEOF STATEMENTS!!
+
     private void generateDomainAndProblem(ProblemObjects objects, StartState init, GoalState goal, ProblemOperators operators) throws JasonException {
 
 
@@ -53,7 +61,7 @@ public class AgentSpeakToPDDL {
                 throw new JasonException("Object " + object + " is not properly defined");
 
             //Adds the types
-            String type = lit.getFunctor();
+            String type = lit.getFunctor().toUpperCase();
             typeSet.add(new TypedSymbol<>(new Symbol<>(SymbolType.TYPE, type)));
 
             //Adds the objects
@@ -100,16 +108,39 @@ public class AgentSpeakToPDDL {
             Expression preconds = getExpression(ctx, paramsWithTypes);
 
             Expression effects = new Expression();
+            Expression oneOf = new Expression(Connector.ASSIGN);
+            Expression oneOfChild = new Expression();
 
+
+            boolean withinOneOf = false;
             PlanBody curr = op.getBody();
             while(curr != null){
                 Term bodyTerm = curr.getBodyTerm();
-                if(curr.getBodyType().equals(PlanBody.BodyType.delBel)){
-                    bodyTerm = DefaultTerm.parse("not " + bodyTerm.toString());
+                if(bodyTerm.toString().contains("ONEOF_START")){
+                    oneOf = new Expression(Connector.ASSIGN);
+                    oneOf.setSymbol(new Symbol(SymbolType.FUNCTOR, "oneof"));
+                    oneOfChild = new Expression();
+                    withinOneOf = true;
+                } else if(bodyTerm.toString().contains("ONEOF_BREAK")){
+                    oneOf.addChild(new Expression(oneOfChild));
+                    oneOfChild = new Expression();
+                } else if(bodyTerm.toString().contains("ONEOF_END")){
+                    oneOf.addChild(new Expression(oneOfChild));
+                    effects.addChild(new Expression(oneOf));
+                    withinOneOf = false;
+                } else {
+                    if(curr.getBodyType().equals(PlanBody.BodyType.delBel)){
+                        bodyTerm = DefaultTerm.parse("not " + bodyTerm.toString());
+                    }
+                    if(curr.getBodyType().equals(PlanBody.BodyType.delBel) || curr.getBodyType().equals(PlanBody.BodyType.addBel)) {
+                        if(withinOneOf){
+                            oneOfChild.addChild(getExpression(bodyTerm, paramsWithTypes));
+                        } else {
+                            effects.addChild(getExpression(bodyTerm, paramsWithTypes));
+                        }
+                    }
                 }
-                if(curr.getBodyType().equals(PlanBody.BodyType.delBel) || curr.getBodyType().equals(PlanBody.BodyType.addBel)) {
-                    effects.addChild(getExpression(bodyTerm, paramsWithTypes));
-                }
+
                 curr = curr.getBodyNext();
             }
 
@@ -173,7 +204,8 @@ public class AgentSpeakToPDDL {
             domain.addPredicate(pred);
         }
 
-        String domainOut = domain.toString().replace(":typing", ":typing :non-deterministic").replace("(assign", "(oneof").replace("(None )", "(and)");
+        String domainOut = domain.toString().replace(":typing", ":typing :non-deterministic").replace("(assign", "(oneof").replace("()", "(and)");
+
 
         //Removing Auto GeneratedTasks
         int start = domainOut.indexOf("(:task");
@@ -186,7 +218,7 @@ public class AgentSpeakToPDDL {
             del += outCharArray[i];
         }
         domainOut = domainOut.replace(del, "");
-        domainOut = domainOut.replaceAll("~", "strong_negate_");
+        domainOut = domainOut.replaceAll("~", "_strong_negate_");
 
         String problemOut = "(define (problem p1)\n(:domain d1)\n(:objects\n";
         for(TypedSymbol t : problem.getObjects()){
@@ -201,7 +233,10 @@ public class AgentSpeakToPDDL {
         problemOut+="\n))";
         problemOut = problemOut.replaceAll("~", "_strong_negate_");
 
-
+        for(String predicate : this.predicates.keySet().stream().filter(p -> this.predicates.get(p).isEmpty()).toList()){
+            domainOut = domainOut.replace("(" + predicate + " )", predicate).replace("(" + predicate + ")", predicate);
+            problemOut = problemOut.replace("(" + predicate + " )", predicate).replace("(" + predicate + ")", predicate);
+        }
 
         //Creating Domain File
         try{

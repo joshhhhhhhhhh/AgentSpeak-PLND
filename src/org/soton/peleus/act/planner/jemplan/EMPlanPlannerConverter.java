@@ -192,7 +192,12 @@ public class EMPlanPlannerConverter implements PlannerConverter {
 		//We leave it like that
 		return "";
 	}
-	
+
+	@Override
+	public List<Plan> getContingencyPlan() {
+		return List.of();
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see org.soton.peleus.act.planner.PlannerConverter#toStripsString(jason.asSyntax.Term)

@@ -28,6 +28,7 @@ import org.soton.peleus.act.planner.*;
 import org.soton.peleus.act.planner.javagp.JavaGPPlannerConverter;
 import org.soton.peleus.act.planner.jemplan.EMPlanPlannerConverter;
 import org.soton.peleus.act.planner.jplan.JPlanPlannerConverter;
+import org.soton.peleus.act.planner.prp.PRPPlannerConverter;
 
 /**
  * An <code>InternalAction</code> that links an AgentSpeak agent to
@@ -84,12 +85,14 @@ public class plan extends DefaultInternalAction {
 	protected PlannerConverter createPlannerConverter(String plannerName) {
 		PlannerConverter converter = null;
 
-		if(plannerName == "emplan") {
+		if(plannerName.equals("emplan")) {
 			converter = new EMPlanPlannerConverter();
-		} else if (plannerName == "jplan") {
+		} else if (plannerName.equals("jplan")) {
 			converter = new JPlanPlannerConverter();
-		} else if (plannerName == "javagp") {
+		} else if (plannerName.equals("javagp")) {
 			converter = new JavaGPPlannerConverter();
+		} else if (plannerName.equals("prp")){
+			converter = new PRPPlannerConverter();
 		} else {
 			converter = new JavaGPPlannerConverter();
 		}
@@ -152,9 +155,6 @@ public class plan extends DefaultInternalAction {
 		GoalState goalState = plannerConverter.getGoalState();
 		ProblemOperators operators = plannerConverter.getProblemOperators();
 
-		AgentSpeakToPDDL pddlTest = new AgentSpeakToPDDL();
-		pddlTest.generatePDDL(objects, startState, goalState, operators);
-
 		//Invoke the planner with the generated planning problem
 		return plannerConverter.executePlanner(objects, startState, goalState, operators, maxPlanSteps);
 	}
@@ -204,7 +204,6 @@ public class plan extends DefaultInternalAction {
 		logger.info("Adding new plan: "+System.getProperty("line.separator")+plan);
 		ts.getAg().getPL().add(plan,true);
 
-		Trigger trigger = plan.getTrigger();
 		logger.info("Invoking plan "+planNumber);
 		ts.getC().addAchvGoal(Literal.parseLiteral("executePlan(plan"+planNumber+")"), null);
 		// Now we are adding the new goal to the current intention
@@ -212,6 +211,20 @@ public class plan extends DefaultInternalAction {
 		planNumber++; //TODO: Convert and execute must be done in sequence
 	}
 
+	/**
+	 * Adds the new plan to the intention structure to execute it
+	 * @param plans
+	 * @param ts
+	 * @throws JasonException
+	 */
+	protected void executeNewContingencyPlan(List<Plan> plans, TransitionSystem ts) throws JasonException {
+		for(Plan plan : plans){
+			logger.info("Adding new plan: "+System.getProperty("line.separator")+plan);
+			ts.getAg().getPL().add(plan,true);
+		}
+		ts.getC().addAchvGoal(Literal.parseLiteral("plan"+planNumber), null);
+		planNumber++;
+	}
 	//@SuppressWarnings("unchecked")
 	public Object execute(TransitionSystem ts, Unifier un, Term[] args)
 			throws Exception {
@@ -266,16 +279,6 @@ public class plan extends DefaultInternalAction {
 			}
 		}
 
-		//If the planner(X) parameter was specified
-		//select another planner converter
-		if(plannerName != null) {
-			logger.info("PlannerName: "+plannerName);
-			PlannerConverter converter = createPlannerConverter(plannerName);
-			if(converter != null) {
-				this.plannerConverter = converter;
-			}
-		}
-
 		//Extract the literals in the belief base to be used
 		//as the initial state for the planning problem
 		BeliefBase beliefBase = ts.getAg().getBB();
@@ -289,6 +292,23 @@ public class plan extends DefaultInternalAction {
 		plans = selectUseablePlans(plans, useRemote);
 		logger.info("planLibrary: "+planLibrary);
 
+		for(Plan plan : plans){
+			if (plan.toString().toLowerCase().contains("oneof")){
+				plannerName = "prp";
+				break;
+			}
+		}
+
+		//If the planner(X) parameter was specified
+		//select another planner converter
+		if(plannerName != null) {
+			logger.info("PlannerName: "+plannerName);
+			PlannerConverter converter = createPlannerConverter(plannerName);
+			if(converter != null) {
+				this.plannerConverter = converter;
+			}
+		}
+
 		//Invoke the planner
 		boolean planFound = invokePlanner(beliefs, goals, plans, maxPlanSteps);
 
@@ -297,11 +317,19 @@ public class plan extends DefaultInternalAction {
 			return false;
 		}
 
-		logger.info("Converting plan...");
-		Plan plan = convertPlan(makeGeneric, makeAtomic, useRemote);
+		if(plannerName.equals("prp")) {
+			logger.info("Contingency plan cannot be converted.");
 
-		logger.info("Executing plan...");
-		executeNewPlan(plan, ts);
+			executeNewContingencyPlan(plannerConverter.getContingencyPlan(), ts);
+
+		} else {
+			logger.info("Converting plan...");
+			Plan plan = convertPlan(makeGeneric, makeAtomic, useRemote);
+
+			logger.info("Executing plan...");
+			executeNewPlan(plan, ts);
+		}
+
 
 		return true;
 	}

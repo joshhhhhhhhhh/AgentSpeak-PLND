@@ -16,7 +16,7 @@
 	<property name="build.test.dir" value="${basedir}/bin/tests" />
 	<property name="peleusJar" value="${basedir}/lib/peleus.jar" />
 
-	<property name="jasonJar" value="${basedir}/lib/jason.jar" />
+	<property name="jasonJar" value="${basedir}/lib/Jason/jason.jar" />
 	<property name="jasonEnvJar" value="${basedir}/lib/jasonenv.jar" />
 	<property name="jplanJar" value="${basedir}/lib/jplan.jar" />
 	<property name="javagpJar" value="${basedir}/lib/javagp.jar" />

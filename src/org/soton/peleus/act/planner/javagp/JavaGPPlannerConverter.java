@@ -172,4 +172,9 @@ public class JavaGPPlannerConverter implements PlannerConverter {
 	public String toStripsString(RelExpr expr) {
 		return null;
 	}
+
+	@Override
+	public List<Plan> getContingencyPlan() {
+		return List.of();
+	}
 }
