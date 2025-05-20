@@ -15,12 +15,17 @@ apply plugin: 'java'
 
 repositories {
     mavenCentral()
+    mavenLocal()
     maven { url "https://raw.githubusercontent.com/jacamo-lang/mvn-repo/master" }
     maven { url "https://jade.tilab.com/maven/" }
 }
 
 dependencies {
-    implementation 'io.github.jason-lang:jason-interpreter:3.2.0'
+    implementation group: 'org.jason' , name: 'jason' , version: '3.1-epistemic',
+            changing: true, transitive: true
+    implementation group: 'com.mvezina', name:'epistemic-agents', version:  '1.0-SNAPSHOT', changing: true
+    implementation 'com.google.code.gson:gson:2.8.5'
+    implementation 'org.jetbrains:annotations:19.0.0'
 
     // to use locally installed jars:
     implementation fileTree(dir: 'lib', include: '*.jar')

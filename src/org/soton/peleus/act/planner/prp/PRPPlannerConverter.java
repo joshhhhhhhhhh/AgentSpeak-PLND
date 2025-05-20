@@ -15,6 +15,7 @@ import java.io.InputStreamReader;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class PRPPlannerConverter implements PlannerConverter {
 
@@ -67,7 +68,7 @@ public class PRPPlannerConverter implements PlannerConverter {
                 //This checks the objects and makes sure that the terms in the initial values match the objects
                 boolean isValidInitialValue = true;
                 for (Term term : literal.getTerms()){
-                   if(!this.objects.getTerms().stream().map(t -> ((Literal)t).getTerm(0)).toList().contains(term)) {
+                   if(!this.objects.getTerms().stream().map(t -> ((Literal)t).getTerm(0)).collect(Collectors.toList()).contains(term)) {
                        isValidInitialValue = false;
                    }
                 }

@@ -81,11 +81,11 @@ public class AgentSpeakToPDDL {
             System.out.println("LITERAL: " + op.getTrigger().getLiteral());
             List<String> actionVariables;
             if(op.getTrigger().getLiteral().hasTerm()){
-                actionVariables = op.getTrigger().getLiteral().getTerms().stream().map(Object::toString).toList();
+                actionVariables = op.getTrigger().getLiteral().getTerms().stream().map(Object::toString).collect(Collectors.toList());
             } else {
                 actionVariables = Collections.emptyList();
             }
-            List<Term> types = op.getLabel().getAnnots().getAsList().stream().filter(t->t.toString().contains("type(")).toList();
+            List<Term> types = op.getLabel().getAnnots().getAsList().stream().filter(t->t.toString().contains("type(")).collect(Collectors.toList());
 
             Map<String, String> paramsWithTypes = new HashMap<>();
             List<TypedSymbol<String>> params = new ArrayList<>();
@@ -233,7 +233,7 @@ public class AgentSpeakToPDDL {
         problemOut+="\n))";
         problemOut = problemOut.replaceAll("~", "_strong_negate_");
 
-        for(String predicate : this.predicates.keySet().stream().filter(p -> this.predicates.get(p).isEmpty()).toList()){
+        for(String predicate : this.predicates.keySet().stream().filter(p -> this.predicates.get(p).isEmpty()).collect(Collectors.toList())){
             domainOut = domainOut.replace("(" + predicate + " )", predicate).replace("(" + predicate + ")", predicate);
             problemOut = problemOut.replace("(" + predicate + " )", predicate).replace("(" + predicate + ")", predicate);
         }
@@ -390,7 +390,7 @@ public class AgentSpeakToPDDL {
                 this.predicates.computeIfAbsent(predicateName, k -> new ArrayList<>());
                 System.out.println("BEFORE PRED: " + predicateName + " | " + predicates);
                 List<String> temp = this.predicates.get(predicateName);
-                temp.add(this.problem.getObjects().stream().filter(o -> o.getValue().equals(name)).toList().get(0).getTypes().get(0).toString());
+                temp.add(this.problem.getObjects().stream().filter(o -> o.getValue().equals(name)).collect(Collectors.toList()).get(0).getTypes().get(0).toString());
                 this.predicates.put(predicateName, temp);
                 System.out.println("AFTER PRED: " + predicateName + " | " + predicates);
 

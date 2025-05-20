@@ -7,7 +7,7 @@ RUN apt-get install -y software-properties-common
 RUN apt-get update && apt-get -y install locales
 
 # install common packages
-RUN apt-get install -y \
+RUN apt-get update && apt-get install -y \
         build-essential \
         cmake \
         make \
@@ -31,20 +31,40 @@ RUN apt-get install -y \
         libtool \
         antlr3 \
         wget \
-        curl
+        curl \
+        file \
+        procps \
+        perl \
+        maven \
+        opam \
+        zip \
+        tar \
+        unzip
 
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y expect
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Adding java
-RUN add-apt-repository -y ppa:linuxuprising/java
-RUN apt-get update
-RUN echo oracle-java17-installer shared/accepted-oracle-license-v1-3 select true | /usr/bin/debconf-set-selections
-RUN apt-get install -y oracle-java17-installer
+#RUN add-apt-repository -y ppa:linuxuprising/java
+#RUN apt-get update
+#RUN echo oracle-java15-installer shared/accepted-oracle-license-v1-3 select true | /usr/bin/debconf-set-selections
+#RUN apt-get install -y oracle-java15-installer
+
+ENV JAVA_HOME=/opt/jdk-15
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
+
+# Download and install OpenJDK 15
+RUN wget https://github.com/AdoptOpenJDK/openjdk15-binaries/releases/download/jdk-15.0.2%2B7/OpenJDK15U-jdk_x64_linux_hotspot_15.0.2_7.tar.gz \
+    && mkdir -p /opt \
+    && tar -xzf OpenJDK15U-jdk_x64_linux_hotspot_15.0.2_7.tar.gz -C /opt \
+    && mv /opt/jdk-15.0.2+7 /opt/jdk-15 \
+    && rm OpenJDK15U-jdk_x64_linux_hotspot_15.0.2_7.tar.gz
 
 # install python and related
 RUN apt-get install -y python3 python3-dev python3-pip python3-venv python-is-python3 pypy cython3
 RUN apt-get install -y python2
+RUN pip3 install --upgrade Flask
+RUN pip3 install --upgrade flask-cors
 RUN pip3 install --upgrade pip
 RUN pip3 install --upgrade graphviz
 RUN pip3 install --upgrade networkx
@@ -55,10 +75,27 @@ RUN pip3 install --upgrade networkx
 RUN pip3 install --upgrade nltk
 RUN pip3 install --upgrade automata-lib
 
+#Gradle
 
+ENV GRADLE_VERSION=8.14
+RUN wget -q https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip \
+        && unzip -q gradle-${GRADLE_VERSION}-bin.zip -d /opt \
+        && rm gradle-${GRADLE_VERSION}-bin.zip \
+        && ln -s /opt/gradle-${GRADLE_VERSION} /opt/gradle
+
+ENV PATH="/opt/gradle/bin:${PATH}"
+
+#Updating Node
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+RUN apt-get update && apt-get install -y nodejs
+
+#Brew
+#RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
 # Grab the other planners (currently just prp)
 WORKDIR /PLANNERS
+
+
 
 RUN git clone https://github.com/QuMuLab/planner-for-relevant-policies.git prp
 RUN cd prp/src && ./build_all -j 8
@@ -68,6 +105,24 @@ RUN git clone https://github.com/hstairs/ndcpces.git ndcpces
 
 RUN pip3 install --upgrade pysmt --pre
 RUN pysmt-install --confirm-agreement --msat
+
+#Epistemic Jason Reqs
+RUN opam init --reinit --disable-sandboxing --yes
+RUN opam install touist --yes
+RUN git clone https://github.com/Ethavanol/touist-service.git
+#RUN cd touist-service && python3 -m server
+
+RUN git clone https://github.com/Ethavanol/epistemic-reasoner.git
+RUN cd epistemic-reasoner && npm install
+
+RUN git clone https://github.com/Ethavanol/epistemic-jason.git
+RUN cd epistemic-jason && ./gradlew publishToMavenLocal -x test
+
+RUN git clone https://github.com/Ethavanol/epistemic-agents.git
+
+RUN cd epistemic-agents && mv reasoner-config.json.example reasoner-config.json
+RUN cd epistemic-agents && gradle wrapper --gradle-version 8.6
+RUN cd epistemic-agents && ./gradlew publishToMavenLocal -x test
 
 #RUN git clone https://github.com/pysmt/pysmt.git pysmt
 #RUN python3 pysmt/install.py --confirm-agreement --msat
@@ -93,5 +148,6 @@ RUN chmod -R 777 /PLANNERS/bin
 WORKDIR /PELEUS
 
 COPY . .
-CMD ["./gradlew"]
+#CMD ["ls"]
+ENTRYPOINT ["/bin/bash", "docker_startup.sh"]
 #CMD /bin/bash
