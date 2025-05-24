@@ -1,14 +1,10 @@
 package org.soton.peleus.act.planner;
 
 import fr.uga.pddl4j.parser.*;
-import fr.uga.pddl4j.problem.DefaultProblem;
-import fr.uga.pddl4j.problem.Goal;
-import fr.uga.pddl4j.problem.Problem;
 import jason.JasonException;
 import jason.asSyntax.*;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
@@ -111,9 +107,16 @@ public class AgentSpeakToPDDL {
             Expression oneOf = new Expression(Connector.ASSIGN);
             Expression oneOfChild = new Expression();
 
+            Expression when = new Expression(Connector.WHEN);
+            Expression whenCondition = new Expression();
+            Expression whenEffect = new Expression();
 
             boolean withinOneOf = false;
+            boolean withinWhenCondition = false;
+            boolean withinWhenEffect = false;
             PlanBody curr = op.getBody();
+
+            //CANNOT HAVE A WHEN WITHIN A ONEOF
             while(curr != null){
                 Term bodyTerm = curr.getBodyTerm();
                 if(bodyTerm.toString().contains("ONEOF_START")){
@@ -126,15 +129,38 @@ public class AgentSpeakToPDDL {
                     oneOfChild = new Expression();
                 } else if(bodyTerm.toString().contains("ONEOF_END")){
                     oneOf.addChild(new Expression(oneOfChild));
-                    effects.addChild(new Expression(oneOf));
+                    if(withinWhenCondition || withinWhenEffect)
+                        when.addChild(oneOf);
+                    else
+                        effects.addChild(new Expression(oneOf));
                     withinOneOf = false;
+                } else if(bodyTerm.toString().contains("WHEN_START")){
+                    when = new Expression(Connector.WHEN);
+                    whenCondition = new Expression();
+                    whenEffect = new Expression();
+                    withinWhenCondition = true;
+                } else if(bodyTerm.toString().contains("WHEN_BREAK")){
+                    withinWhenCondition = false;
+                    withinWhenEffect = true;
+                } else if(bodyTerm.toString().contains("WHEN_END")){
+                    withinWhenCondition = false;
+                    withinWhenEffect = false;
+                    when.addChild(whenCondition);
+                    when.addChild(whenEffect);
+
+                    effects.addChild(when);
                 } else {
                     if(curr.getBodyType().equals(PlanBody.BodyType.delBel)){
                         bodyTerm = DefaultTerm.parse("not " + bodyTerm.toString());
                     }
                     if(curr.getBodyType().equals(PlanBody.BodyType.delBel) || curr.getBodyType().equals(PlanBody.BodyType.addBel)) {
+                        //Checks oneof first, so that if oneof inside of when it adds to oneof first
                         if(withinOneOf){
                             oneOfChild.addChild(getExpression(bodyTerm, paramsWithTypes));
+                        } else if (withinWhenCondition){
+                            whenCondition.addChild(getExpression(bodyTerm, paramsWithTypes));
+                        } else if (withinWhenEffect) {
+                            whenEffect.addChild(getExpression(bodyTerm, paramsWithTypes));
                         } else {
                             effects.addChild(getExpression(bodyTerm, paramsWithTypes));
                         }
