@@ -17,6 +17,7 @@ import jason.asSyntax.PlanBody.BodyType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.soton.peleus.act.planner.PlanContextExtractor;
 import org.soton.peleus.act.planner.ProblemOperators;
@@ -75,10 +76,11 @@ public class ProblemOperatorsImpl extends ProblemOperators {
 			
 			//The constraints to the types are represented as preconditions
 			if(trigger.getLiteral().getArity() > 0) {
-				Term types[] = plan.getLabel().getTermsArray();
+				//Term types[] = plan.getLabel().getTermsArray();
+				List<Term> types = plan.getLabel().getAnnots().getAsList().stream().filter(t->t.toString().contains("type(")).map(t -> ((Literal)t).getTerm(1)).collect(Collectors.toList());
 				Term terms[] = trigger.getLiteral().getTermsArray();
 				for (int i = 0; i < terms.length; i++) {
-					PropositionImpl proposition = new PropositionImpl(true,types[i].toString());
+					PropositionImpl proposition = new PropositionImpl(true,types.get(i).toString());
 					proposition.addTerm(terms[i]);
 					
 					preconds.add(proposition);

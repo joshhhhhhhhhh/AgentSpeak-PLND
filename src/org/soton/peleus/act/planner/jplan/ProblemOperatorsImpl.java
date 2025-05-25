@@ -15,6 +15,7 @@ import jason.asSyntax.PlanBody.BodyType;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.soton.peleus.act.planner.PlanContextExtractor;
 import org.soton.peleus.act.planner.ProblemOperators;
@@ -39,10 +40,11 @@ public class ProblemOperatorsImpl extends ProblemOperators {
 			//Append operator parameters
 			sb.append("(");
 			if(trigger.getLiteral().getArity() > 0) {
-				Term types[] = plan.getLabel().getTermsArray();
+				//Term types[] = plan.getLabel().getAnnots("type");
+				List<Term> types = plan.getLabel().getAnnots().getAsList().stream().filter(t->t.toString().contains("type(")).map(t -> ((Literal)t).getTerm(1)).collect(Collectors.toList());
 				Term terms[] = trigger.getLiteral().getTermsArray();
 				for (int i = 0; i < terms.length; i++) {
-					sb.append(types[i]);
+					sb.append(types.get(i));
 					/*sb.append(" ?");
 					sb.append(terms[i]);*/
 					sb.append(" ");
