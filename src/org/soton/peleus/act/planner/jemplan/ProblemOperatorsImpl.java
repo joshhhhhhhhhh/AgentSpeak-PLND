@@ -1,6 +1,3 @@
-/**
- * 
- */
 package org.soton.peleus.act.planner.jemplan;
 
 import jason.asSyntax.Literal;

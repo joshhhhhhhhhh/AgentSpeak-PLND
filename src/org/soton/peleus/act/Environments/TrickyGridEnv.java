@@ -17,14 +17,15 @@ public class TrickyGridEnv extends Environment {
     int y;
     boolean canMove;
     Random r;
+    boolean alive;
 
     private static final Logger logger = Logger.getLogger(InternalAction.class.getName());
 
     @Override
     public void init(String[] args) {
         r = new Random();
-        this.x = r.nextInt(1, 4);
-        this.y = r.nextInt(1, 4);
+        this.x = r.nextInt(3)+1;
+        this.y = r.nextInt(3)+1;
         this.canMove = true;
         updatePercepts();
     }
@@ -69,6 +70,14 @@ public class TrickyGridEnv extends Environment {
         } else {
             addPercept(Literal.parseLiteral("has_to_check"));
             removePercept(Literal.parseLiteral("can_move"));
+        }
+        if(y == 4 || (x == 0 && y == 0) || (x == 4 && y == 0)){
+            removePercept(Literal.parseLiteral("alive"));
+        }
+
+        for(int i=0; i<5; i++){
+            addPercept(Literal.parseLiteral("object(x, x_" + i + ")"));
+            addPercept(Literal.parseLiteral("object(y, y_" + i + ")"));
         }
 
         addPercept(Literal.parseLiteral("desires([atx(x_2), aty(y_2)])"));

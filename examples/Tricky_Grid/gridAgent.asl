@@ -20,9 +20,17 @@
 //  test it!!
 //  Create simple tricky grid env
 
+poss(test_case).
+range(atx(X)) :- .range(X, 1, 3).
+range(aty(X)) :- .range(X, 1, 3).
 
-range(atx(X)) :- .ran(X, 1, 3);
-range(aty(X)) :- .ran(X, 1, 3);
+!des.
+
++!des : desires(Goal) <-
+    .print("STARTING PLANNER");
+    org.soton.peleus.act.plan(Goal, [makeGeneric(false)]);
+    .print("PLANNER COMPLETE").
+
 
 @action1 +!check : has_to_check <-
     -has_to_check;
@@ -154,7 +162,7 @@ range(aty(X)) :- .ran(X, 1, 3);
     +atx(x_0);
     WHEN_END.
 
-@action4 +!move_right : can_move <-
+@action5 +!move_right : can_move <-
     -can_move;
     +has_to_check;
     WHEN_START;

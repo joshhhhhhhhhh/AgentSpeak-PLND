@@ -1,10 +1,3 @@
-/*
-   Project src/main/java/ErraticVacuum
-
-   Gradle build file for Jason Application
-   August 25, 2024 - 22:53:06
-*/
-
 defaultTasks 'run'
 
 apply plugin: 'java'
@@ -21,10 +14,12 @@ repositories {
 }
 
 dependencies {
-    //implementation group: 'org.jason' , name: 'jason' , version: '3.1-epistemic',
-    //        changing: true, transitive: true
-    //implementation group: 'com.mvezina', name:'epistemic-agents', version:  '1.0-SNAPSHOT', changing: true
-    implementation 'io.github.jason-lang:jason-interpreter:3.2.0'
+    implementation group: 'org.jason' , name: 'jason' , version: '3.1-epistemic',
+            changing: true, transitive: true
+    implementation group: 'com.mvezina', name:'epistemic-agents', version:  '1.0-SNAPSHOT', changing: true
+    //implementation 'io.github.jason-lang:jason-interpreter:3.2.0'
+
+
     implementation 'com.google.code.gson:gson:2.8.5'
     implementation 'org.jetbrains:annotations:19.0.0'
 
@@ -46,7 +41,7 @@ sourceSets {
 task run (type: JavaExec, dependsOn: 'classes') {
     description 'runs the application'
     mainClass = 'jason.infra.local.RunLocalMAS'
-    args = ['examples/Peleus.mas2j', '--console', '--log-conf', 'logging.properties']
+    args = ['examples/Tricky_Grid/Tricky_Grid.mas2j', '--console', '--log-conf', 'logging.properties']
     classpath sourceSets.main.runtimeClasspath
 }
 

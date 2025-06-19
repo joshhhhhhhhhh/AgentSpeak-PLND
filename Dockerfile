@@ -148,6 +148,8 @@ RUN chmod -R 777 /PLANNERS/bin
 WORKDIR /PELEUS
 
 COPY . .
+
+RUN gradle build
 #CMD ["ls"]
 ENTRYPOINT ["/bin/bash", "docker_startup.sh"]
 #CMD /bin/bash

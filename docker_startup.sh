@@ -1,6 +1,7 @@
-cd ../PLANNERS/touist-service
+cd ../PLANNERS/touist-service || exit
 python3 -m server &
-cd ../epistemic-reasoner
+cd ../epistemic-reasoner || exit
 npm start &
-cd ../../PELEUS
+cd ../../PELEUS || exit
+sed -i -e 's/\r$//' gradlew
 ./gradlew

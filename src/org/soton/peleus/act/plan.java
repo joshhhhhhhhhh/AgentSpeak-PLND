@@ -29,6 +29,8 @@ import org.soton.peleus.act.planner.javagp.JavaGPPlannerConverter;
 import org.soton.peleus.act.planner.jemplan.EMPlanPlannerConverter;
 import org.soton.peleus.act.planner.jplan.JPlanPlannerConverter;
 import org.soton.peleus.act.planner.prp.PRPPlannerConverter;
+import org.soton.peleus.act.planner.ndcpces.NDCPCESPlannerConverter;
+
 
 /**
  * An <code>InternalAction</code> that links an AgentSpeak agent to
@@ -93,6 +95,8 @@ public class plan extends DefaultInternalAction {
 			converter = new JavaGPPlannerConverter();
 		} else if (plannerName.equals("prp")){
 			converter = new PRPPlannerConverter();
+		} else if (plannerName.equals("ndcpces")){
+			converter = new NDCPCESPlannerConverter();
 		} else {
 			converter = new JavaGPPlannerConverter();
 		}
@@ -284,6 +288,9 @@ public class plan extends DefaultInternalAction {
 		BeliefBase beliefBase = ts.getAg().getBB();
 		List<Literal> beliefs = selectRelevantBeliefs(beliefBase);
 		logger.info("beliefBase: "+beliefBase);
+		for(Literal belief : beliefs) {
+			logger.info("BEL: _"+belief+"_");
+		}
 
 		//Extract the plans from the plan library to generate
 		//STRIPS operators in the conversion process
@@ -296,6 +303,14 @@ public class plan extends DefaultInternalAction {
 			if (plan.toString().toLowerCase().contains("oneof")){
 				plannerName = "prp";
 				break;
+			}
+		}
+		if(plannerName.equals("prp")){
+			for(Literal belief : beliefs) {
+				if(belief.toString().toLowerCase().contains("range(") || belief.toString().toLowerCase().contains("poss(")){
+					plannerName = "ndcpces";
+					break;
+				}
 			}
 		}
 

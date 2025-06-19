@@ -12,6 +12,8 @@ import java.util.stream.Collectors;
 
 public class AgentSpeakToPDDL {
 
+    static final String ONE_OF_KEYWORD = "oneof";
+
     Map<String, List<String>> predicates;
     ParsedDomain domain;
     ParsedProblem problem;
@@ -134,6 +136,7 @@ public class AgentSpeakToPDDL {
                     else
                         effects.addChild(new Expression(oneOf));
                     withinOneOf = false;
+                    //System.out.println("ex: " + oneOf);
                 } else if(bodyTerm.toString().contains("WHEN_START")){
                     when = new Expression(Connector.WHEN);
                     whenCondition = new Expression();
@@ -188,12 +191,41 @@ public class AgentSpeakToPDDL {
         problem.setGoal(goalExp);
 
         //init
+        System.out.println("Initial Terms: " + init.getTerms());
         for(Term initTerm : init.getTerms()) {
             Literal bel = Literal.parseLiteral(initTerm.toString());
 
-            Expression initExp = new Expression(Connector.ATOM);
-            initExp.setSymbol(new Symbol(SymbolType.PREDICATE, bel.getFunctor()));
-            if(bel.hasTerm()){
+            Expression initExp;
+
+            if(bel.getFunctor().equals(ONE_OF_KEYWORD)){
+                initExp = new Expression(Connector.ASSIGN);
+                initExp.setSymbol(new Symbol(SymbolType.FUNCTOR, "oneof"));
+                //System.out.println("Within OneOf Check " + initExp);
+                for(int i=1; i<bel.getTerms().size(); i++){
+                    Expression child = new Expression(Connector.ATOM);
+                    child.setSymbol(new Symbol(SymbolType.PREDICATE, bel.getTerm(0)));
+                    child.addArgument(new Symbol(SymbolType.CONSTANT, bel.getTerm(i).toString()));
+                    initExp.addChild(new Expression(child));
+                    System.out.println("Within OneOf Child: " + child);
+                }
+
+
+                if(!this.predicates.containsKey(bel.getTerm(0).toString())){
+                    List<String> types = new ArrayList<>();
+                    for (Term term : bel.getTerms()){
+                        for(TypedSymbol object : problem.getObjects()){
+                            if(term.toString().equals(object.getValue().toString())){
+                                types.add(object.getTypes().get(0).toString());
+                                break;
+                            }
+                        }
+                    }
+                    predicates.put(bel.getTerm(0).toString(), types);
+                }
+                //System.out.println("Within Oneof: " + initExp);
+            } else if(bel.hasTerm()){
+                initExp = new Expression(Connector.ATOM);
+                initExp.setSymbol(new Symbol(SymbolType.PREDICATE, bel.getFunctor()));
                 for (Term term : bel.getTerms()){
                     initExp.addArgument(new Symbol(SymbolType.CONSTANT, term.toString()));
                 }
@@ -210,13 +242,17 @@ public class AgentSpeakToPDDL {
                     predicates.put(bel.getFunctor(), types);
                 }
             } else {
+                initExp = new Expression(Connector.ATOM);
+                initExp.setSymbol(new Symbol(SymbolType.PREDICATE, bel.getFunctor()));
                 if(!this.predicates.containsKey(bel.getFunctor())){
                     predicates.put(bel.getFunctor(), Collections.emptyList());
                 }
             }
 
-            problem.addInitialFact(initExp);
+            problem.addInitialFact(new Expression(initExp));
         }
+        //System.out.println("Init: " + problem.getInit());
+        System.out.println("INIT DONE");
 
         //Adds Predicates
         //Predicates are retrieved from the initial beliefs and the actions
@@ -257,12 +293,13 @@ public class AgentSpeakToPDDL {
         problemOut+=")\n(:goal\n";
         problemOut+=problem.getGoal().toString();
         problemOut+="\n))";
-        problemOut = problemOut.replaceAll("~", "_strong_negate_");
+        problemOut = problemOut.replaceAll("~", "_strong_negate_").replace("(assign", "(oneof");
 
-        for(String predicate : this.predicates.keySet().stream().filter(p -> this.predicates.get(p).isEmpty()).collect(Collectors.toList())){
+
+        /*for(String predicate : this.predicates.keySet().stream().filter(p -> this.predicates.get(p).isEmpty()).collect(Collectors.toList())){
             domainOut = domainOut.replace("(" + predicate + " )", predicate).replace("(" + predicate + ")", predicate);
             problemOut = problemOut.replace("(" + predicate + " )", predicate).replace("(" + predicate + ")", predicate);
-        }
+        }*/
 
         //Creating Domain File
         try{
@@ -394,7 +431,8 @@ public class AgentSpeakToPDDL {
      */
     private Symbol getCorrectSymbol(String name, Map<String, String> vars, String predicateName){
         SymbolType s;
-
+        //System.out.println("NAME: " + name);
+        //System.out.println("Objects: " + this.problem.getObjects());
         //Variable is denoted with a ?
         if(vars.keySet().contains(name)){
             s = SymbolType.VARIABLE;

@@ -1,7 +1,7 @@
 MAS vacuum {
 
-        environment: org.soton.peleus.act.Environments.TrickyGridEnvironment;
+        environment: org.soton.peleus.act.Environments.TrickyGridEnv()
 
         agents: gridAgent;
-        aslSourcePath: "examples/vacuum";
+        aslSourcePath: "examples/Tricky_Grid";
 }
