@@ -18,6 +18,7 @@ public class TrickyGridEnv extends Environment {
     boolean canMove;
     Random r;
     boolean alive;
+    boolean born ;
 
     private static final Logger logger = Logger.getLogger(InternalAction.class.getName());
 
@@ -27,6 +28,8 @@ public class TrickyGridEnv extends Environment {
         this.x = r.nextInt(3)+1;
         this.y = r.nextInt(3)+1;
         this.canMove = true;
+        this.alive = true;
+        this.born = false;
         updatePercepts();
     }
 
@@ -71,16 +74,21 @@ public class TrickyGridEnv extends Environment {
             addPercept(Literal.parseLiteral("has_to_check"));
             removePercept(Literal.parseLiteral("can_move"));
         }
+
+        if(!born){
+            born = true;
+            addPercept(Literal.parseLiteral("alive"));
+            addPercept(Literal.parseLiteral("desires([atx(x_2), aty(y_2), alive])"));
+            for(int i=0; i<5; i++){
+                addPercept(Literal.parseLiteral("object(x, x_" + i + ")"));
+                addPercept(Literal.parseLiteral("object(y, y_" + i + ")"));
+            }
+        }
+
         if(y == 4 || (x == 0 && y == 0) || (x == 4 && y == 0)){
             removePercept(Literal.parseLiteral("alive"));
         }
 
-        for(int i=0; i<5; i++){
-            addPercept(Literal.parseLiteral("object(x, x_" + i + ")"));
-            addPercept(Literal.parseLiteral("object(y, y_" + i + ")"));
-        }
-
-        addPercept(Literal.parseLiteral("desires([atx(x_2), aty(y_2)])"));
         logger.info("CURRENT ACTUAL LOCATION: X-" + this.x + " Y-" + this.y);
     }
 

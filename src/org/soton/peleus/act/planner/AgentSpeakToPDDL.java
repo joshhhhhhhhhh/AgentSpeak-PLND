@@ -106,7 +106,7 @@ public class AgentSpeakToPDDL {
             Expression preconds = getExpression(ctx, paramsWithTypes);
 
             Expression effects = new Expression();
-            Expression oneOf = new Expression(Connector.ASSIGN);
+            Expression oneOf = new Expression(Connector.OR);
             Expression oneOfChild = new Expression();
 
             Expression when = new Expression(Connector.WHEN);
@@ -122,7 +122,7 @@ public class AgentSpeakToPDDL {
             while(curr != null){
                 Term bodyTerm = curr.getBodyTerm();
                 if(bodyTerm.toString().contains("ONEOF_START")){
-                    oneOf = new Expression(Connector.ASSIGN);
+                    oneOf = new Expression(Connector.OR);
                     oneOf.setSymbol(new Symbol(SymbolType.FUNCTOR, "oneof"));
                     oneOfChild = new Expression();
                     withinOneOf = true;
@@ -131,17 +131,22 @@ public class AgentSpeakToPDDL {
                     oneOfChild = new Expression();
                 } else if(bodyTerm.toString().contains("ONEOF_END")){
                     oneOf.addChild(new Expression(oneOfChild));
-                    if(withinWhenCondition || withinWhenEffect)
-                        when.addChild(oneOf);
+                    if(withinWhenCondition){
+                        whenCondition.addChild(new Expression(oneOf));
+                    }
+                    else if (withinWhenEffect) {
+                        whenEffect.addChild(new Expression(oneOf));
+                    }
                     else
                         effects.addChild(new Expression(oneOf));
                     withinOneOf = false;
-                    //System.out.println("ex: " + oneOf);
+                    //System.out.println("ex oneof: " + oneOf);
                 } else if(bodyTerm.toString().contains("WHEN_START")){
                     when = new Expression(Connector.WHEN);
                     whenCondition = new Expression();
                     whenEffect = new Expression();
                     withinWhenCondition = true;
+                    withinWhenEffect = false;
                 } else if(bodyTerm.toString().contains("WHEN_BREAK")){
                     withinWhenCondition = false;
                     withinWhenEffect = true;
@@ -152,6 +157,7 @@ public class AgentSpeakToPDDL {
                     when.addChild(whenEffect);
 
                     effects.addChild(when);
+                    //System.out.println("ex when: " + when);
                 } else {
                     if(curr.getBodyType().equals(PlanBody.BodyType.delBel)){
                         bodyTerm = DefaultTerm.parse("not " + bodyTerm.toString());
@@ -198,10 +204,11 @@ public class AgentSpeakToPDDL {
             Expression initExp;
 
             if(bel.getFunctor().equals(ONE_OF_KEYWORD)){
-                initExp = new Expression(Connector.ASSIGN);
+                initExp = new Expression(Connector.OR);
                 initExp.setSymbol(new Symbol(SymbolType.FUNCTOR, "oneof"));
                 //System.out.println("Within OneOf Check " + initExp);
                 for(int i=1; i<bel.getTerms().size(); i++){
+
                     Expression child = new Expression(Connector.ATOM);
                     child.setSymbol(new Symbol(SymbolType.PREDICATE, bel.getTerm(0)));
                     child.addArgument(new Symbol(SymbolType.CONSTANT, bel.getTerm(i).toString()));
@@ -251,7 +258,7 @@ public class AgentSpeakToPDDL {
 
             problem.addInitialFact(new Expression(initExp));
         }
-        //System.out.println("Init: " + problem.getInit());
+        System.out.println("Init: " + problem.getInit());
         System.out.println("INIT DONE");
 
         //Adds Predicates
@@ -266,7 +273,12 @@ public class AgentSpeakToPDDL {
             domain.addPredicate(pred);
         }
 
-        String domainOut = domain.toString().replace(":typing", ":typing :non-deterministic").replace("(assign", "(oneof").replace("()", "(and)");
+
+        String domainOut = domain.toString().replace(":typing", ":typing :non-deterministic").replace("(or (", "(oneof (").replace("()", "(and)").replace(":parameters (and)", ":parameters ()");
+
+        domainOut = domainOut.replaceAll("\\(and \\(([^\\(\\)]*)\\)\\)", "($1)");
+        domainOut = domainOut.replaceAll("\\(and \\(not \\(([^\\(\\)]*)\\)\\)\\)", "(not ($1))");
+
 
 
         //Removing Auto GeneratedTasks
@@ -293,8 +305,11 @@ public class AgentSpeakToPDDL {
         problemOut+=")\n(:goal\n";
         problemOut+=problem.getGoal().toString();
         problemOut+="\n))";
-        problemOut = problemOut.replaceAll("~", "_strong_negate_").replace("(assign", "(oneof");
-
+        problemOut = problemOut.replaceAll("~", "_strong_negate_").replace("(or (", "(oneof (");
+        if(problemOut.contains("(oneof")){
+            domainOut = domainOut.replace("(:requirements :equality :strips :typing :non-deterministic)", "(:requirements :typing)");
+        }
+            problemOut = problemOut.replace("(:init", "(:init (and").replace("(:goal", ")(:goal");
 
         /*for(String predicate : this.predicates.keySet().stream().filter(p -> this.predicates.get(p).isEmpty()).collect(Collectors.toList())){
             domainOut = domainOut.replace("(" + predicate + " )", predicate).replace("(" + predicate + ")", predicate);
@@ -368,6 +383,11 @@ public class AgentSpeakToPDDL {
                     } else {
                         exp.addArgument(getCorrectSymbol(arg.toString(), vars, ((Literal) term).getFunctor()));
                     }
+                }
+            }
+            else {
+                if(!this.predicates.containsKey(((Literal) term).getFunctor())){
+                    this.predicates.put(term.toString(), Collections.emptyList());
                 }
             }
 

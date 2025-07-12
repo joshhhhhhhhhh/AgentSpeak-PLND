@@ -30,7 +30,7 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 	
 	protected ProblemObjects objects;
 	
-	protected List<Term> plan;
+	protected Plan plan;
 
 	protected String planName;
 
@@ -42,6 +42,7 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 		this.objects = new ProblemObjectsImpl();
 		this.startState = new StartStateImpl(this);
 		this.goalState = new GoalStateImpl();
+		//this.plan = new ArrayList<>();
 		List<Literal> tempStartState = new ArrayList<>();
 
 		for (Iterator<Term> iter = goals.iterator(); iter.hasNext();) {
@@ -71,7 +72,8 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 				//This checks the objects and makes sure that the terms in the initial values match the objects
 				boolean isValidInitialValue = true;
 				for (Term term : literal.getTerms()){
-					if(!term.isNumeric() && !this.objects.getTerms().stream().map(t -> ((Literal)t).getTerm(0)).collect(Collectors.toList()).contains(term)) {
+					if((term.isNumeric() && beliefs.stream().filter(b -> b.toString().contains("range(" + literal.getFunctor())).count() == 0)
+					 || (!term.isNumeric() && !this.objects.getTerms().stream().map(t -> ((Literal)t).getTerm(0)).collect(Collectors.toList()).contains(term))) {
 						isValidInitialValue = false;
 						System.out.println("INVALID BELIEF: " + literal);
 					}
@@ -97,6 +99,7 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 			this.startState.addTerm(literal);
 		}
 
+		System.out.println(this.startState);
 		this.planName = "plan" + planNumber;
 		planNumber++;
 
@@ -208,6 +211,7 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 		return returnValues;
 	}
 
+	//@Override
 	public boolean executePlanner(ProblemObjects objects, StartState startState, GoalState goalState, ProblemOperators operators) {
 		return executePlanner(objects, startState, goalState, operators, 10);
 	}
@@ -221,7 +225,7 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 
 
 			String[] command = new String[]{
-					"ndcpces", "domain.pddl", "task.pddl"
+					"ndcpces", "-o" , "domain.pddl", "-f" , "task.pddl"
 			};
 			Process proc = new ProcessBuilder(command).start();
 
@@ -242,7 +246,7 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 			proc.waitFor();
 
 
-			parseNDCPCES(policy, this.plan);
+			parseNDCPCES(policy);
 		} catch (IOException | InterruptedException e){
 			logger.warning(e.getMessage());
 			return false;
@@ -253,10 +257,40 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 		return true;
 	}
 
-	public void parseNDCPCES(String policy, List<Term> outputPlan){
-		outputPlan.clear();
-		//TODO fill plan with the actual values
-		// when going through, remove all instances of the numericSymbols.
+	public void parseNDCPCES(String policy){
+		Trigger trigger = new Trigger(Trigger.TEOperator.add, Trigger.TEType.achieve, Literal.parseLiteral(planName));
+
+		List<Term> contextList = this.startState.getTerms();
+
+		String contextString = "";
+		for(Term b : contextList){
+			if(!b.toString().contains("oneof"))
+				contextString += b.toString() + " & ";
+		}
+		LogicalFormula context;
+		try {
+			context = ASSyntax.parseFormula(contextString.substring(0, contextString.length() - 3));
+		}catch(ParseException e){
+			System.out.println(e.getMessage());
+			return;
+		}
+
+		String[] vals = policy.split("Problem Solvable")[1].split("\\[")[1].split("]")[0].split(", ");
+		PlanBody prev = null;
+		PlanBody start = null;
+		for(String val : vals){
+			PlanBody body = new PlanBodyImpl(PlanBody.BodyType.action, Literal.parseLiteral(val.replace("'", "")));
+			if(prev == null){
+				start = body;
+				prev = body;
+			} else {
+				prev.add(body);
+				prev = body;
+			}
+		}
+		String label = "Generated"+planNumber;
+		this.plan = new Plan(new Pred(label), trigger, context, start);
+		System.out.println("PLAN: " + plan);
 	}
 	
 	public boolean executePlanner(ProblemObjects objects,
@@ -272,7 +306,8 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 	}
 
 	public Plan getAgentSpeakPlan(boolean generic) {
-		return null;
+
+		return this.plan;
 	}
 	
 	public String toStripsString(Literal literal) {

@@ -20,7 +20,7 @@
 //  test it!!
 //  Create simple tricky grid env
 
-poss(test_case).
+//poss(test_case).
 range(atx(X)) :- .range(X, 1, 3).
 range(aty(X)) :- .range(X, 1, 3).
 
@@ -192,9 +192,9 @@ range(aty(X)) :- .range(X, 1, 3).
     WHEN_START;
     +aty(y_0);
     WHEN_BREAK;
-    ONE_OF_START;
+    ONEOF_START;
     +aty(y_0);
-    ONE_OF_BREAK;
+    ONEOF_BREAK;
     -aty(y_0);
     +aty(y_1);
     ONEOF_END;
@@ -202,9 +202,9 @@ range(aty(X)) :- .range(X, 1, 3).
     WHEN_START;
     +aty(y_1);
     WHEN_BREAK;
-    ONE_OF_START;
+    ONEOF_START;
     +aty(y_1);
-    ONE_OF_BREAK;
+    ONEOF_BREAK;
     -aty(y_1);
     +aty(y_2);
     ONEOF_END;
@@ -212,9 +212,9 @@ range(aty(X)) :- .range(X, 1, 3).
     WHEN_START;
     +aty(y_2);
     WHEN_BREAK;
-    ONE_OF_START;
+    ONEOF_START;
     +aty(y_2);
-    ONE_OF_BREAK;
+    ONEOF_BREAK;
     -aty(y_2);
     +aty(y_3);
     ONEOF_END;
@@ -222,9 +222,9 @@ range(aty(X)) :- .range(X, 1, 3).
     WHEN_START;
     +aty(y_3);
     WHEN_BREAK;
-    ONE_OF_START;
+    ONEOF_START;
     +aty(y_3);
-    ONE_OF_BREAK;
+    ONEOF_BREAK;
     -aty(y_3);
     +aty(y_4);
     ONEOF_END;

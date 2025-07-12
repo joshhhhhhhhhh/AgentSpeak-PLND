@@ -209,7 +209,7 @@ public class plan extends DefaultInternalAction {
 		ts.getAg().getPL().add(plan,true);
 
 		logger.info("Invoking plan "+planNumber);
-		ts.getC().addAchvGoal(Literal.parseLiteral("executePlan(plan"+planNumber+")"), null);
+		ts.getC().addAchvGoal(Literal.parseLiteral("plan"+planNumber+""), null);
 		// Now we are adding the new goal to the current intention
 		//ts.getC().addAchvGoal(trigger.getLiteral(), ts.getC().getSelectedIntention());
 		planNumber++; //TODO: Convert and execute must be done in sequence
@@ -336,7 +336,6 @@ public class plan extends DefaultInternalAction {
 			logger.info("Contingency plan cannot be converted.");
 
 			executeNewContingencyPlan(plannerConverter.getContingencyPlan(), ts);
-
 		} else {
 			logger.info("Converting plan...");
 			Plan plan = convertPlan(makeGeneric, makeAtomic, useRemote);
