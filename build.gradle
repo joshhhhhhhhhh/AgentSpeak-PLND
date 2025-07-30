@@ -14,9 +14,9 @@ repositories {
 }
 
 dependencies {
-    implementation group: 'org.jason' , name: 'jason' , version: '3.1-epistemic',
+    implementation group: 'org.jason' , name: 'jason' , version: '3.3-epistemic',
             changing: true, transitive: true
-    implementation group: 'com.mvezina', name:'epistemic-agents', version:  '1.0-SNAPSHOT', changing: true
+    //implementation group: 'com.mvezina', name:'epistemic-agents', version:  '1.0-SNAPSHOT', changing: true
     //implementation 'io.github.jason-lang:jason-interpreter:3.2.0'
 
 

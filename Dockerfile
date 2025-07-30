@@ -50,15 +50,19 @@ ENV DEBIAN_FRONTEND=noninteractive
 #RUN echo oracle-java15-installer shared/accepted-oracle-license-v1-3 select true | /usr/bin/debconf-set-selections
 #RUN apt-get install -y oracle-java15-installer
 
-ENV JAVA_HOME=/opt/jdk-15
-ENV PATH="${JAVA_HOME}/bin:${PATH}"
+
 
 # Download and install OpenJDK 15
-RUN wget https://github.com/AdoptOpenJDK/openjdk15-binaries/releases/download/jdk-15.0.2%2B7/OpenJDK15U-jdk_x64_linux_hotspot_15.0.2_7.tar.gz \
-    && mkdir -p /opt \
-    && tar -xzf OpenJDK15U-jdk_x64_linux_hotspot_15.0.2_7.tar.gz -C /opt \
-    && mv /opt/jdk-15.0.2+7 /opt/jdk-15 \
-    && rm OpenJDK15U-jdk_x64_linux_hotspot_15.0.2_7.tar.gz
+#RUN wget https://github.com/AdoptOpenJDK/openjdk15-binaries/releases/download/jdk-15.0.2%2B7/OpenJDK15U-jdk_x64_linux_hotspot_15.0.2_7.tar.gz \
+#    && mkdir -p /opt \
+#    && tar -xzf OpenJDK15U-jdk_x64_linux_hotspot_15.0.2_7.tar.gz -C /opt \
+#    && mv /opt/jdk-15.0.2+7 /opt/jdk-15 \
+#    && rm OpenJDK15U-jdk_x64_linux_hotspot_15.0.2_7.tar.gz
+RUN ls -a
+RUN wget https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb \
+    && apt install ./jdk-21_linux-x64_bin.deb
+ENV JAVA_HOME=/usr/lib/jvm/jdk-21.0.8-oracle-x64
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 # install python and related
 RUN apt-get install -y python3 python3-dev python3-pip python3-venv python-is-python3 pypy cython3
@@ -107,8 +111,8 @@ RUN pip3 install --upgrade pysmt --pre
 RUN pysmt-install --confirm-agreement --msat
 
 #Epistemic Jason Reqs
-RUN opam init --reinit --disable-sandboxing --yes
-RUN opam install touist --yes
+RUN eval $(opam env) && opam init --reinit --disable-sandboxing --yes
+RUN eval $(opam env) && opam install touist --yes
 RUN git clone https://github.com/Ethavanol/touist-service.git
 #RUN cd touist-service && python3 -m server
 
@@ -118,11 +122,11 @@ RUN cd epistemic-reasoner && npm install
 RUN git clone https://github.com/Ethavanol/epistemic-jason.git
 RUN cd epistemic-jason && ./gradlew publishToMavenLocal -x test
 
-RUN git clone https://github.com/Ethavanol/epistemic-agents.git
+#RUN git clone https://github.com/Ethavanol/epistemic-agents.git
 
-RUN cd epistemic-agents && mv reasoner-config.json.example reasoner-config.json
-RUN cd epistemic-agents && gradle wrapper --gradle-version 8.6
-RUN cd epistemic-agents && ./gradlew publishToMavenLocal -x test
+#RUN cd epistemic-agents && mv reasoner-config.json.example reasoner-config.json
+#RUN cd epistemic-agents && gradle wrapper --gradle-version 8.6
+#RUN cd epistemic-agents && ./gradlew publishToMavenLocal -x test
 
 #RUN git clone https://github.com/pysmt/pysmt.git pysmt
 #RUN python3 pysmt/install.py --confirm-agreement --msat

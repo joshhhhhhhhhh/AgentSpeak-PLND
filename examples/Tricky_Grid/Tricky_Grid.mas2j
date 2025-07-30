@@ -2,6 +2,7 @@ MAS vacuum {
 
         environment: org.soton.peleus.act.Environments.TrickyGridEnv()
 
-        agents: gridAgent;
+        agents: gridAgent
+        agentClass epistemic_jason.asSemantics.AgentEpistemic;
         aslSourcePath: "examples/Tricky_Grid";
 }

@@ -76,7 +76,7 @@ public class AgentSpeakToPDDL {
 
         //Adds Actions :)
         for(Plan op : operators.getPlans()){
-            System.out.println("LITERAL: " + op.getTrigger().getLiteral());
+            //System.out.println("LITERAL: " + op.getTrigger().getLiteral());
             List<String> actionVariables;
             if(op.getTrigger().getLiteral().hasTerm()){
                 actionVariables = op.getTrigger().getLiteral().getTerms().stream().map(Object::toString).collect(Collectors.toList());
@@ -197,7 +197,7 @@ public class AgentSpeakToPDDL {
         problem.setGoal(goalExp);
 
         //init
-        System.out.println("Initial Terms: " + init.getTerms());
+        //System.out.println("Initial Terms: " + init.getTerms());
         for(Term initTerm : init.getTerms()) {
             Literal bel = Literal.parseLiteral(initTerm.toString());
 
@@ -350,7 +350,7 @@ public class AgentSpeakToPDDL {
      * @throws JasonException
      */
     private Expression getExpression(Term term, Map<String, String> vars) throws JasonException {
-        System.out.println("EXP: " + term.toString());
+        //System.out.println("EXP: " + term.toString());
         if(term instanceof LogExpr){
             if(((LogExpr) term).getOp().equals(LogExpr.LogicalOp.not)){
                 Expression exp = new Expression(Connector.NOT);
@@ -458,12 +458,12 @@ public class AgentSpeakToPDDL {
             s = SymbolType.VARIABLE;
             if(predicateName != null){
                 this.predicates.computeIfAbsent(predicateName, k -> new ArrayList<>());
-                System.out.println("BEFORE PRED: " + predicateName + " | " + predicates);
+                //System.out.println("BEFORE PRED: " + predicateName + " | " + predicates);
 
                 List<String> temp = this.predicates.get(predicateName);
                 temp.add(vars.get(name));
                 this.predicates.put(predicateName, temp);
-                System.out.println("AFTER PRED: " + predicateName + " | " + predicates);
+                //System.out.println("AFTER PRED: " + predicateName + " | " + predicates);
             }
             return new Symbol(s, "?"+name);
 
@@ -472,11 +472,11 @@ public class AgentSpeakToPDDL {
             s = SymbolType.CONSTANT;
             if(predicateName != null) {
                 this.predicates.computeIfAbsent(predicateName, k -> new ArrayList<>());
-                System.out.println("BEFORE PRED: " + predicateName + " | " + predicates);
+                //System.out.println("BEFORE PRED: " + predicateName + " | " + predicates);
                 List<String> temp = this.predicates.get(predicateName);
                 temp.add(this.problem.getObjects().stream().filter(o -> o.getValue().equals(name)).collect(Collectors.toList()).get(0).getTypes().get(0).toString());
                 this.predicates.put(predicateName, temp);
-                System.out.println("AFTER PRED: " + predicateName + " | " + predicates);
+                //System.out.println("AFTER PRED: " + predicateName + " | " + predicates);
 
             }
             return new Symbol(s, name);

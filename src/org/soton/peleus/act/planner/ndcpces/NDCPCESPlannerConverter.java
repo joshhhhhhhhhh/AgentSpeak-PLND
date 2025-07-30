@@ -222,7 +222,7 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 		pddlCreator.generatePDDL(objects, startState, goalState, operators);
 		try {
 
-
+			double startTime = System.currentTimeMillis();
 
 			String[] command = new String[]{
 					"ndcpces", "-o" , "domain.pddl", "-f" , "task.pddl"
@@ -245,8 +245,15 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 			}
 			proc.waitFor();
 
+			double afterPlanner = System.currentTimeMillis();
 
 			parseNDCPCES(policy);
+
+			double afterParse = System.currentTimeMillis();
+
+			System.out.println("Planning Time: " + (afterPlanner-startTime));
+			System.out.println("Plan Generation Time: " + (afterParse-afterPlanner));
+
 		} catch (IOException | InterruptedException e){
 			logger.warning(e.getMessage());
 			return false;
@@ -290,7 +297,7 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 		}
 		String label = "Generated"+planNumber;
 		this.plan = new Plan(new Pred(label), trigger, context, start);
-		System.out.println("PLAN: " + plan);
+		//System.out.println("PLAN: " + plan);
 	}
 	
 	public boolean executePlanner(ProblemObjects objects,

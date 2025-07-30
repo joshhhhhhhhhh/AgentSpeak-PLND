@@ -26,7 +26,7 @@ range(aty(X)) :- .range(X, 1, 3).
 
 !des.
 
-+!des : desires(Goal) <-
++!des[source(self)] : desires(Goal) <-
     .print("STARTING PLANNER");
     org.soton.peleus.act.plan(Goal, [makeGeneric(false)]);
     .print("PLANNER COMPLETE").

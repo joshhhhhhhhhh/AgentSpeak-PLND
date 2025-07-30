@@ -12,7 +12,7 @@ import jason.asSyntax.ListTerm;
 import jason.asSyntax.Literal;
 import jason.asSyntax.NumberTerm;
 import jason.asSyntax.Plan;
-import jason.asSyntax.PlanLibrary;
+import jason.pl.PlanLibrary;
 import jason.asSyntax.Pred;
 import jason.asSyntax.Structure;
 import jason.asSyntax.Term;
@@ -232,7 +232,7 @@ public class plan extends DefaultInternalAction {
 	//@SuppressWarnings("unchecked")
 	public Object execute(TransitionSystem ts, Unifier un, Term[] args)
 			throws Exception {
-
+		double startTime = System.currentTimeMillis();
 		logger.info("args[0]: "+args[0]+" / args[1]: "+args[1]);
 		//First check that the action was properly invoked with an AgentSpeak
 		//list as its parameter.
@@ -344,7 +344,8 @@ public class plan extends DefaultInternalAction {
 			executeNewPlan(plan, ts);
 		}
 
-
+		double endTime = System.currentTimeMillis();
+		System.out.println("TOTAL TIME: " + (endTime - startTime));
 		return true;
 	}
 
