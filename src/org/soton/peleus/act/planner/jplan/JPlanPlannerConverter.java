@@ -50,7 +50,7 @@ public class JPlanPlannerConverter implements PlannerConverter {
 	
 	protected int planNumber = 0;
 
-	public void createPlanningProblem(List<Literal> beliefs, List<Plan> plans, List<Term> goals) {
+	public void createPlanningProblem(List<Literal> beliefs, List<Plan> plans, List<Term> goals, List<List<Literal>> possibilities) {
 		objects = new ProblemObjectsImpl();
 		startState = new StartStateImpl(this);
 		goalState = new GoalStateImpl();

@@ -2,6 +2,12 @@
 
 package org.soton.peleus.act;
 
+import java.io.File;
+import java.nio.file.FileVisitOption;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import jason.JasonException;
 import jason.asSemantics.DefaultInternalAction;
 import jason.asSemantics.InternalAction;
@@ -22,6 +28,7 @@ import jason.bb.BeliefBase;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Scanner;
 import java.util.logging.Logger;
 
 import org.soton.peleus.act.planner.*;
@@ -151,8 +158,9 @@ public class plan extends DefaultInternalAction {
 	protected boolean invokePlanner(List<Literal> beliefs,
 									List<Term> goals,
 									List<Plan> plans,
+									List<List<Literal>> multipleWorlds,
 									int maxPlanSteps) {
-		plannerConverter.createPlanningProblem(beliefs, plans, goals);
+		plannerConverter.createPlanningProblem(beliefs, plans, goals, multipleWorlds);
 
 		ProblemObjects objects = plannerConverter.getProblemObjects();
 		StartState startState = plannerConverter.getStartState();
@@ -296,6 +304,7 @@ public class plan extends DefaultInternalAction {
 		//STRIPS operators in the conversion process
 		PlanLibrary planLibrary = ts.getAg().getPL();
 		List<Plan> plans = planLibrary.getPlans();
+		List<List<Literal>> multiWorldInits = new ArrayList<>();
 		plans = selectUseablePlans(plans, useRemote);
 		logger.info("planLibrary: "+planLibrary);
 
@@ -309,6 +318,39 @@ public class plan extends DefaultInternalAction {
 			for(Literal belief : beliefs) {
 				if(belief.toString().toLowerCase().contains("range(") || belief.toString().toLowerCase().contains("poss(")){
 					plannerName = "ndcpces";
+					String logFileName = "";
+					System.out.println("USING NDCPCES");
+					//System.out.println(Files.walk(Paths.get("../PLANNERS/epistemic-reasoner/logs")));
+					for(Path path : Files.walk(Paths.get("../PLANNERS/epistemic-reasoner/logs")).toList()){
+						if(path.toString().toLowerCase().endsWith(".log")){
+							logFileName = path.toString();
+						}
+					}
+					File logFile = new File(logFileName);
+					Scanner s = new Scanner(logFile);
+					boolean flag = false;
+					while(s.hasNextLine()){
+						String line = s.nextLine();
+						System.out.println("TESTEST LINE: "+line);
+						if(flag){
+							String[] data = line.split(" : ");
+							//System.out.println("TESTEST DATA: "+data);
+
+							if(data.length != 2)
+								break;
+							List<Literal> possibility = new ArrayList<>();
+							for(String b : data[1].replace("\n", "").split(",")){
+								if(!b.contains("object(") && !b.contains(":-")){
+									possibility.add(Literal.parseLiteral(b));
+								}
+							}
+							multiWorldInits.add(possibility);
+
+						} else if (line.contains("CURRENT MODEL")){
+							flag = true;
+						}
+					}
+					System.out.println("INIT WORLDSS: " + multiWorldInits);
 					break;
 				}
 			}
@@ -325,7 +367,7 @@ public class plan extends DefaultInternalAction {
 		}
 
 		//Invoke the planner
-		boolean planFound = invokePlanner(beliefs, goals, plans, maxPlanSteps);
+		boolean planFound = invokePlanner(beliefs, goals, plans, multiWorldInits, maxPlanSteps);
 
 		if(!planFound) {
 			logger.info("Plan not Found!!!");

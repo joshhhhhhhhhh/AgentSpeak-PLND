@@ -1,4 +1,4 @@
-(define (domain alban_5_5)
+(define (domain d1)
   (:requirements :typing)
   (:types X y)
 

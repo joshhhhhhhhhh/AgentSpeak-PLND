@@ -24,6 +24,21 @@
 range(atx(X)) :- .range(X, 1, 3).
 range(aty(X)) :- .range(X, 1, 3).
 
+range(noneX) :- true.
+noneX :- .findall(not(atx(X)), range(atx(X)), List) & .big_and(Y, List) & Y.
+~noneX.
+
+range(noneY) :- true.
+noneY :- .findall(not(aty(X)), range(aty(X)), List) & .big_and(Y, List) & Y.
+~noneY.
+
+~atx(X1) :- atx(X2) & (X1 \== X2).
+~aty(X1) :- aty(X2) & (X1 \== X2).
+
+
+alive.
+can_move.
+
 !des.
 
 +!des[source(self)] : desires(Goal) <-

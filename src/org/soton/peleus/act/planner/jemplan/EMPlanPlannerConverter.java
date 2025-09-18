@@ -49,7 +49,7 @@ public class EMPlanPlannerConverter implements PlannerConverter {
 	/* (non-Javadoc)
 	 * @see org.soton.peleus.act.planner.PlannerConverter#createPlanningProblem(java.util.List, java.util.List, java.util.List)
 	 */
-	public void createPlanningProblem(List<Literal> beliefs, List<Plan> plans, List<Term> goals) {
+	public void createPlanningProblem(List<Literal> beliefs, List<Plan> plans, List<Term> goals, List<List<Literal>> possibilities) {
 		startState = new StartStateImpl(this);
 		goalState = new GoalStateImpl();
 		operators = new ProblemOperatorsImpl(this);

@@ -3,6 +3,7 @@ package org.soton.peleus.act.planner;
 import fr.uga.pddl4j.parser.*;
 import jason.JasonException;
 import jason.asSyntax.*;
+import org.apache.logging.log4j.core.pattern.LiteralPatternConverter;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -24,13 +25,23 @@ public class AgentSpeakToPDDL {
         this.problem = new DefaultParsedProblem(new Symbol<String>(SymbolType.DOMAIN, "domain"));
         problem.setDomainName(new Symbol<>(SymbolType.DOMAIN, "d1"));
     }
-    public void generatePDDL(ProblemObjects objects, StartState init, GoalState goal, ProblemOperators operators) {
+
+    public void generatePONDPDDL(ProblemObjects objects, Set<Literal> alwaysObservable, Map<String, Set<Literal>> partiallyObservable, GoalState goal, ProblemOperators operators) {
         try {
-            generateDomainAndProblem(objects, init, goal, operators);
+            generateDomainAndProblem(objects, null, goal, operators, true, alwaysObservable, partiallyObservable);
         } catch (JasonException e) {
             System.out.println("Could Not Create PDDL Files: " + e.getMessage());
         }
     }
+
+    public void generateFONDPDDL(ProblemObjects objects, StartState init, GoalState goal, ProblemOperators operators) {
+        try {
+            generateDomainAndProblem(objects, init, goal, operators, false, null, null);
+        } catch (JasonException e) {
+            System.out.println("Could Not Create PDDL Files: " + e.getMessage());
+        }
+    }
+
 
     //ONEOF SYNTAX:
     //ONEOF_START
@@ -40,7 +51,7 @@ public class AgentSpeakToPDDL {
     //ONEOF_END
     //CANNOT NEST ONEOF STATEMENTS!!
 
-    private void generateDomainAndProblem(ProblemObjects objects, StartState init, GoalState goal, ProblemOperators operators) throws JasonException {
+    private void generateDomainAndProblem(ProblemObjects objects, StartState init, GoalState goal, ProblemOperators operators, boolean pond, Set<Literal> alwaysObservable, Map<String, Set<Literal>> partiallyObservable) throws JasonException {
 
 
         domain.addRequirement(RequireKey.EQUALITY);
@@ -196,13 +207,108 @@ public class AgentSpeakToPDDL {
         }
         problem.setGoal(goalExp);
 
-        //init
+            //init
         //System.out.println("Initial Terms: " + init.getTerms());
-        for(Term initTerm : init.getTerms()) {
-            Literal bel = Literal.parseLiteral(initTerm.toString());
+        if(pond){
+            /*
+            Expression topOneOf = new Expression(Connector.OR);
+            topOneOf.setSymbol(new Symbol(SymbolType.FUNCTOR, "oneof"));
 
-            Expression initExp;
+            for(List<Literal> possibility : possibilities){
+                Expression child = new Expression();
+                for(Literal belief : possibility){
+                    Expression belExp = new Expression(Connector.ATOM);
+                    belExp.setSymbol(new Symbol(SymbolType.FUNCTOR, belief.getFunctor()));
+                    if(belief.hasTerm()) {
+                        for (Term term : belief.getTerms()) {
+                            belExp.addArgument(new Symbol(SymbolType.CONSTANT, term.toString()));
+                        }
 
+                        if(!this.predicates.containsKey(belief.getFunctor().toString())){
+                            List<String> types = new ArrayList<>();
+                            for (Term term : belief.getTerms()){
+                                for(TypedSymbol object : problem.getObjects()){
+                                    if(term.toString().equals(object.getValue().toString())){
+                                        types.add(object.getTypes().get(0).toString());
+                                        break;
+                                    }
+                                }
+                            }
+                            predicates.put(belief.getFunctor().toString(), types);
+                        }
+                    }
+                    child.addChild(belExp);
+
+
+
+                }
+                topOneOf.addChild(child);
+            }
+
+            problem.addInitialFact(new Expression<>(topOneOf));
+            */
+            for(Literal lit : alwaysObservable){
+                Expression belExp = new Expression(Connector.ATOM);
+                belExp.setSymbol(new Symbol(SymbolType.FUNCTOR, lit.getFunctor()));
+                if(lit.hasTerm()) {
+                    for (Term term : lit.getTerms()) {
+                        belExp.addArgument(new Symbol(SymbolType.CONSTANT, term.toString()));
+                    }
+
+                    if(!this.predicates.containsKey(lit.getFunctor().toString())){
+                        List<String> types = new ArrayList<>();
+                        for (Term term : lit.getTerms()){
+                            for(TypedSymbol object : problem.getObjects()){
+                                if(term.toString().equals(object.getValue().toString())){
+                                    types.add(object.getTypes().get(0).toString());
+                                    break;
+                                }
+                            }
+                        }
+                        predicates.put(lit.getFunctor().toString(), types);
+                    }
+                }
+                problem.addInitialFact(new Expression(belExp));
+            }
+            for(Set<Literal> poss : partiallyObservable.values()){
+                Expression oneOfExp = new Expression(Connector.OR);
+                oneOfExp.setSymbol(new Symbol(SymbolType.FUNCTOR, "oneof"));
+
+                for(Literal lit : poss){
+                    Expression belExp = new Expression(Connector.ATOM);
+                    belExp.setSymbol(new Symbol(SymbolType.FUNCTOR, lit.getFunctor()));
+                    if(lit.hasTerm()) {
+                        for (Term term : lit.getTerms()) {
+                            belExp.addArgument(new Symbol(SymbolType.CONSTANT, term.toString()));
+                        }
+
+                        if(!this.predicates.containsKey(lit.getFunctor().toString())){
+                            List<String> types = new ArrayList<>();
+                            for (Term term : lit.getTerms()){
+                                for(TypedSymbol object : problem.getObjects()){
+                                    if(term.toString().equals(object.getValue().toString())){
+                                        types.add(object.getTypes().get(0).toString());
+                                        break;
+                                    }
+                                }
+                            }
+                            predicates.put(lit.getFunctor().toString(), types);
+                        }
+                    }
+                    oneOfExp.addChild(belExp);
+                }
+                problem.addInitialFact(oneOfExp);
+            }
+
+        } else {
+
+
+            for (Term initTerm : init.getTerms()) {
+                Literal bel = Literal.parseLiteral(initTerm.toString());
+
+                Expression initExp;
+
+            /*
             if(bel.getFunctor().equals(ONE_OF_KEYWORD)){
                 initExp = new Expression(Connector.OR);
                 initExp.setSymbol(new Symbol(SymbolType.FUNCTOR, "oneof"));
@@ -230,33 +336,37 @@ public class AgentSpeakToPDDL {
                     predicates.put(bel.getTerm(0).toString(), types);
                 }
                 //System.out.println("Within Oneof: " + initExp);
-            } else if(bel.hasTerm()){
-                initExp = new Expression(Connector.ATOM);
-                initExp.setSymbol(new Symbol(SymbolType.PREDICATE, bel.getFunctor()));
-                for (Term term : bel.getTerms()){
-                    initExp.addArgument(new Symbol(SymbolType.CONSTANT, term.toString()));
-                }
-                if(!this.predicates.containsKey(bel.getFunctor())){
-                    List<String> types = new ArrayList<>();
-                    for (Term term : bel.getTerms()){
-                        for(TypedSymbol object : problem.getObjects()){
-                            if(term.toString().equals(object.getValue().toString())){
-                                types.add(object.getTypes().get(0).toString());
-                                break;
+               } else
+             */
+
+                if (bel.hasTerm()) {
+                    initExp = new Expression(Connector.ATOM);
+                    initExp.setSymbol(new Symbol(SymbolType.PREDICATE, bel.getFunctor()));
+                    for (Term term : bel.getTerms()) {
+                        initExp.addArgument(new Symbol(SymbolType.CONSTANT, term.toString()));
+                    }
+                    if (!this.predicates.containsKey(bel.getFunctor())) {
+                        List<String> types = new ArrayList<>();
+                        for (Term term : bel.getTerms()) {
+                            for (TypedSymbol object : problem.getObjects()) {
+                                if (term.toString().equals(object.getValue().toString())) {
+                                    types.add(object.getTypes().get(0).toString());
+                                    break;
+                                }
                             }
                         }
+                        predicates.put(bel.getFunctor(), types);
                     }
-                    predicates.put(bel.getFunctor(), types);
+                } else {
+                    initExp = new Expression(Connector.ATOM);
+                    initExp.setSymbol(new Symbol(SymbolType.PREDICATE, bel.getFunctor()));
+                    if (!this.predicates.containsKey(bel.getFunctor())) {
+                        predicates.put(bel.getFunctor(), Collections.emptyList());
+                    }
                 }
-            } else {
-                initExp = new Expression(Connector.ATOM);
-                initExp.setSymbol(new Symbol(SymbolType.PREDICATE, bel.getFunctor()));
-                if(!this.predicates.containsKey(bel.getFunctor())){
-                    predicates.put(bel.getFunctor(), Collections.emptyList());
-                }
-            }
 
-            problem.addInitialFact(new Expression(initExp));
+                problem.addInitialFact(new Expression(initExp));
+            }
         }
         System.out.println("Init: " + problem.getInit());
         System.out.println("INIT DONE");
@@ -309,7 +419,7 @@ public class AgentSpeakToPDDL {
         if(problemOut.contains("(oneof")){
             domainOut = domainOut.replace("(:requirements :equality :strips :typing :non-deterministic)", "(:requirements :typing)");
         }
-            problemOut = problemOut.replace("(:init", "(:init (and").replace("(:goal", ")(:goal");
+        problemOut = problemOut.replace("(:init", "(:init (and").replace("(:goal", ")(:goal");
 
         /*for(String predicate : this.predicates.keySet().stream().filter(p -> this.predicates.get(p).isEmpty()).collect(Collectors.toList())){
             domainOut = domainOut.replace("(" + predicate + " )", predicate).replace("(" + predicate + ")", predicate);

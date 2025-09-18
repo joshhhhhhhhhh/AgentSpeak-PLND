@@ -37,7 +37,7 @@ public class PRPPlannerConverter implements PlannerConverter {
 
 
     @Override
-    public void createPlanningProblem(List<Literal> beliefs, List<Plan> plans, List<Term> goals) {
+    public void createPlanningProblem(List<Literal> beliefs, List<Plan> plans, List<Term> goals, List<List<Literal>> possibilities) {
         this.objects = new ProblemObjectsImpl();
         this.startState = new StartStateImpl(this);
         this.goalState = new GoalStateImpl();
@@ -117,7 +117,7 @@ public class PRPPlannerConverter implements PlannerConverter {
         try {
 
 
-            pddlCreator.generatePDDL(objects, startState, goalState, operators);
+            pddlCreator.generateFONDPDDL(objects, startState, goalState, operators);
 
             String[] command;
 

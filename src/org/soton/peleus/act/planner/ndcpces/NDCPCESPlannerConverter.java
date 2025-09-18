@@ -2,6 +2,7 @@ package org.soton.peleus.act.planner.ndcpces;
 
 import jason.asSyntax.*;
 import jason.asSyntax.parser.ParseException;
+import org.apache.logging.log4j.core.pattern.LiteralPatternConverter;
 import org.soton.peleus.act.planner.*;
 import org.soton.peleus.act.planner.ndcpces.*;
 
@@ -25,6 +26,8 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 	protected GoalState goalState;
 	
 	protected StartState startState;
+
+	protected List<List<Literal>> possibilities;
 	
 	protected ProblemOperators operators;
 	
@@ -38,10 +41,24 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 
 	protected Set<String> numericSymbols;
 
-	public void createPlanningProblem(List<Literal> beliefs, List<Plan> plans, List<Term> goals) {
+	private Set<Literal> alwaysObserved;
+	private Map<String,Set<Literal>> partiallyObserved;
+
+	private Set<Literal> alwaysObservedRaw;
+	private Map<String,Set<Literal>> partiallyObservedRaw;
+
+	//Maps (atx(?) : atx(x_?))
+	private Map<String, String> numericSymbolMap;
+
+	@Override
+	public void createPlanningProblem(List<Literal> beliefs, List<Plan> plans, List<Term> goals, List<List<Literal>> possibilities) {
 		this.objects = new ProblemObjectsImpl();
-		this.startState = new StartStateImpl(this);
+		//this.startState = new StartStateImpl(this);
 		this.goalState = new GoalStateImpl();
+		this.numericSymbolMap = new HashMap<>();
+		this.possibilities = new ArrayList<>();
+
+
 		//this.plan = new ArrayList<>();
 		List<Literal> tempStartState = new ArrayList<>();
 
@@ -57,32 +74,6 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 			}
 		}
 
-		System.out.println("OBJECTS: " + this.objects.getTerms());
-		System.out.println("BELIEFS: " + beliefs);
-		for (Literal literal : beliefs) {
-			//Dont want to add objects
-			if(literal.getFunctor().startsWith("object")) {
-				continue;
-			}
-			// Adding literals without terms
-			if(!literal.hasTerm()){
-				this.startState.addTerm(literal);
-			} else {
-				//Case for literals with terms
-				//This checks the objects and makes sure that the terms in the initial values match the objects
-				boolean isValidInitialValue = true;
-				for (Term term : literal.getTerms()){
-					if((term.isNumeric() && beliefs.stream().filter(b -> b.toString().contains("range(" + literal.getFunctor())).count() == 0)
-					 || (!term.isNumeric() && !this.objects.getTerms().stream().map(t -> ((Literal)t).getTerm(0)).collect(Collectors.toList()).contains(term))) {
-						isValidInitialValue = false;
-						System.out.println("INVALID BELIEF: " + literal);
-					}
-				}
-				if(isValidInitialValue) tempStartState.add(literal);
-			}
-		}
-
-
 		this.operators = new ProblemOperatorsImpl(this);
 
 		// logger.info("Plans found: ");
@@ -91,15 +82,94 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 			// logger.info(plan.toString());
 		}
 
+
+		System.out.println("OBJECTS: " + this.objects.getTerms());
+		System.out.println("BELIEFS: " + beliefs);
+
+		for(List<Literal> p: possibilities){
+			this.possibilities.add(convertNumbers(p));
+		}
+		System.out.println("TESTTESTTEST2: " + this.possibilities);
+
+		for(List<Literal> possibility : this.possibilities){
+			for (Literal literal : possibility) {
+				//Dont want to add objects
+				if(!literal.getFunctor().startsWith("object") && literal.hasTerm()) {
+					//Case for literals with terms
+					//This checks the objects and makes sure that the terms in the initial values match the objects
+					boolean isValidInitialValue = true;
+					for (Term term : literal.getTerms()){
+						if((term.isNumeric() && beliefs.stream().filter(b -> b.toString().contains("range(" + literal.getFunctor())).count() == 0)
+						 || (!term.isNumeric() && !this.objects.getTerms().stream().map(t -> ((Literal)t).getTerm(0)).collect(Collectors.toList()).contains(term))) {
+							isValidInitialValue = false;
+							possibility.remove(literal);
+							System.out.println("INVALID BELIEF: " + literal);
+						}
+					}
+				}
+			}
+		}
+
+		//Transforming Worlds into square versions
+		// NDCPCES Can't handle (oneof (and ...)) so the expressions within the oneof need to be atomic
+		this.alwaysObserved = new HashSet<>(this.possibilities.get(0));
+		this.alwaysObservedRaw = new HashSet<>(possibilities.get(0));
+		for(int i=1; i<possibilities.size(); i++){
+			this.alwaysObserved.retainAll(this.possibilities.get(i));
+			this.alwaysObservedRaw.retainAll(possibilities.get(i));
+		}
+		System.out.println("FULLY OBSERVABLE BELIEFS: " + this.alwaysObserved);
+		System.out.println("FULLY OBSERVABLE BELIEFS RAW: " + this.alwaysObservedRaw);
+
+
+		this.partiallyObserved = new HashMap<>();
+		for(Literal lit : this.possibilities.get(0)){
+			if(!this.alwaysObserved.contains(lit)){
+				Set<Literal> temp = new HashSet<>();
+				temp.add(lit);
+				this.partiallyObserved.put(lit.getFunctor(), temp);
+			}
+		}
+
+		this.partiallyObservedRaw = new HashMap<>();
+		for(Literal lit : possibilities.get(0)){
+			if(!this.alwaysObserved.contains(lit)){
+				Set<Literal> temp = new HashSet<>();
+				temp.add(lit);
+				this.partiallyObservedRaw.put(lit.getFunctor(), temp);
+			}
+		}
+
+		for(int i=1; i<this.possibilities.size(); i++){
+			for(Literal lit : this.possibilities.get(i)){
+				if(!this.alwaysObserved.contains(lit)){
+					this.partiallyObserved.get(lit.getFunctor()).add(lit);
+				}
+			}
+		}
+
+		for(int i=1; i<possibilities.size(); i++){
+			for(Literal lit : possibilities.get(i)){
+				if(!this.alwaysObservedRaw.contains(lit)){
+					this.partiallyObservedRaw.get(lit.getFunctor()).add(lit);
+				}
+			}
+		}
+
+		System.out.println("UNIQUE CASES: " + this.partiallyObserved);
+		System.out.println("UNIQUE CASES RAW: " + this.partiallyObservedRaw);
+
+
+
 		this.numericSymbols = new HashSet<>();
 
 		System.out.println(tempStartState);
 
-		for(Literal literal : convertToRanges(tempStartState)) {
-			this.startState.addTerm(literal);
-		}
+		//for(Literal literal : convertToRanges(tempStartState)) {
+		//	this.startState.addTerm(literal);
+		//}
 
-		System.out.println(this.startState);
+		System.out.println("POSSIBILITIES: " + this.possibilities);
 		this.planName = "plan" + planNumber;
 		planNumber++;
 
@@ -129,6 +199,59 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 		return objects;
 	}
 
+	private List<Literal> convertNumbers(List<Literal> beliefs){
+		List<Literal> ret = new ArrayList<>();
+		for(Literal literal : beliefs){
+			if(!literal.hasTerm()){
+				ret.add(literal);
+			} else{
+				if(this.numericSymbolMap.containsKey(literal.toString().replaceAll("\\d+", "?"))){
+
+					String temp = this.numericSymbolMap.get(literal.toString().replaceAll("\\d+", "?"));
+					for(Term t : literal.getTerms()){
+						temp = temp.replace("?", t.toString());
+					}
+					ret.add(Literal.parseLiteral(temp));
+
+				} else if(literal.getTerm(0).isNumeric()) {
+					for(Plan op : this.operators.getPlans()){
+						PlanBody body = op.getBody();
+						Boolean flag = false;
+						while(body != null){
+							if(body.getBodyTerm() instanceof Literal) {
+								Literal lit = (Literal)body.getBodyTerm();
+								if(lit.getFunctor().equals(literal.getFunctor())) {
+
+									String tempTerm = lit.getFunctor() + "(";
+									for(Term t : lit.getTerms()){
+										tempTerm += t.toString().replaceAll("\\d+", "?") + ",";
+									}
+									tempTerm = tempTerm.substring(0, tempTerm.length() - 1);
+									tempTerm += ")";
+									this.numericSymbolMap.put(literal.toString().replaceAll("\\d+", "?"), tempTerm);
+
+									String temp = this.numericSymbolMap.get(literal.toString().replaceAll("\\d+", "?"));
+									for(Term t : literal.getTerms()){
+										temp = temp.replace("?", t.toString());
+									}
+									ret.add(Literal.parseLiteral(temp));
+
+									flag = true;
+									System.out.println("BREAKING__: " + this.numericSymbolMap);
+									break;
+								}
+							}
+							body = body.getBodyNext();
+
+						}
+						if(flag) break;
+					}
+				}
+
+			}
+		}
+		return ret;
+	}
 	/**
 	 * Converts beliefs such as x(1), x(2), x(3), ~x(1), ~x(2), ~x(3) into oneof(x, x_1, x_3).
 	 * Requires predicates in the actions which follow same name, like x(x_1).
@@ -219,7 +342,8 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 	@Override
 	public boolean executePlanner(ProblemObjects objects, StartState startState, GoalState goalState, ProblemOperators operators, int maxPlanSteps) {
 		AgentSpeakToPDDL pddlCreator = new AgentSpeakToPDDL();
-		pddlCreator.generatePDDL(objects, startState, goalState, operators);
+
+		pddlCreator.generatePONDPDDL(objects, this.alwaysObserved, this.partiallyObserved, goalState, operators);
 		try {
 
 			double startTime = System.currentTimeMillis();
@@ -255,7 +379,7 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 			System.out.println("Plan Generation Time: " + (afterParse-afterPlanner));
 
 		} catch (IOException | InterruptedException e){
-			logger.warning(e.getMessage());
+			logger.warning("IOException: " + e.getMessage());
 			return false;
 		}
 
@@ -267,12 +391,15 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 	public void parseNDCPCES(String policy){
 		Trigger trigger = new Trigger(Trigger.TEOperator.add, Trigger.TEType.achieve, Literal.parseLiteral(planName));
 
-		List<Term> contextList = this.startState.getTerms();
 
 		String contextString = "";
-		for(Term b : contextList){
-			if(!b.toString().contains("oneof"))
-				contextString += b.toString() + " & ";
+		for(Term b : alwaysObservedRaw){
+			contextString += b.toString() + " & ";
+		}
+		for(Set<Literal> set : partiallyObservedRaw.values()){
+			for(Literal b : set){
+				contextString += "poss(" + b.toString() + ") & ";
+			}
 		}
 		LogicalFormula context;
 		try {
@@ -297,6 +424,7 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 		}
 		String label = "Generated"+planNumber;
 		this.plan = new Plan(new Pred(label), trigger, context, start);
+		System.out.println("PLAN CREATED: " + this.plan);
 		//System.out.println("PLAN: " + plan);
 	}
 	
