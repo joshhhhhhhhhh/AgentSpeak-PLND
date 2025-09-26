@@ -1,0 +1,8 @@
+MAS mapc {
+
+        environment: org.soton.peleus.act.Environments.MAPC2019Env()
+
+        agents: mapc
+        agentClass epistemic_jason.asSemantics.AgentEpistemic;
+        aslSourcePath: "examples/MAPC";
+}

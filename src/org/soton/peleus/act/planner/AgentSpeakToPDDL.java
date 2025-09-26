@@ -113,8 +113,12 @@ public class AgentSpeakToPDDL {
 
             //Preconditions required to be a string of ANDS
             Term ctx = op.getContext();
-
-            Expression preconds = getExpression(ctx, paramsWithTypes);
+            Expression preconds;
+            if(ctx == null){
+                preconds = new Expression<>();
+            } else {
+                preconds = getExpression(ctx, paramsWithTypes);
+            }
 
             Expression effects = new Expression();
             Expression oneOf = new Expression(Connector.OR);

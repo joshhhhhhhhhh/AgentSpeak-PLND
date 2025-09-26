@@ -314,47 +314,53 @@ public class plan extends DefaultInternalAction {
 				break;
 			}
 		}
-		if(plannerName.equals("prp")){
-			for(Literal belief : beliefs) {
-				if(belief.toString().toLowerCase().contains("range(") || belief.toString().toLowerCase().contains("poss(")){
-					plannerName = "ndcpces";
-					String logFileName = "";
-					System.out.println("USING NDCPCES");
-					//System.out.println(Files.walk(Paths.get("../PLANNERS/epistemic-reasoner/logs")));
-					for(Path path : Files.walk(Paths.get("../PLANNERS/epistemic-reasoner/logs")).toList()){
-						if(path.toString().toLowerCase().endsWith(".log")){
-							logFileName = path.toString();
-						}
-					}
-					File logFile = new File(logFileName);
-					Scanner s = new Scanner(logFile);
-					boolean flag = false;
-					while(s.hasNextLine()){
-						String line = s.nextLine();
-						System.out.println("TESTEST LINE: "+line);
-						if(flag){
-							String[] data = line.split(" : ");
-							//System.out.println("TESTEST DATA: "+data);
 
-							if(data.length != 2)
-								break;
-							List<Literal> possibility = new ArrayList<>();
-							for(String b : data[1].replace("\n", "").split(",")){
-								if(!b.contains("object(") && !b.contains(":-")){
-									possibility.add(Literal.parseLiteral(b));
-								}
-							}
-							multiWorldInits.add(possibility);
-
-						} else if (line.contains("CURRENT MODEL")){
-							flag = true;
-						}
-					}
-					System.out.println("INIT WORLDSS: " + multiWorldInits);
-					break;
-				}
+		plannerName = "ndcpces";
+		String logFileName = "";
+		//System.out.println(Files.walk(Paths.get("../PLANNERS/epistemic-reasoner/logs")));
+		for(Path path : Files.walk(Paths.get("../PLANNERS/epistemic-reasoner/logs")).toList()){
+			if(path.toString().toLowerCase().endsWith(".log")){
+				logFileName = path.toString();
+				System.out.println("FILE: " + path.toString());
 			}
 		}
+		File logFile = new File(logFileName);
+		Scanner s = new Scanner(logFile);
+		boolean flag = false;
+		while(s.hasNextLine()){
+			String line = s.nextLine();
+			//System.out.println(line);
+			if(flag){
+				String[] data = line.split(" : ");
+				//System.out.println("TESTEST DATA: "+data);
+
+				if(data.length == 1){
+					flag = false;
+					continue;
+				}
+				List<Literal> possibility = new ArrayList<>();
+				for(String b : data[data.length-1].replace("\n", "").replaceAll("\\)", "))").split("\\),")){
+					if(!b.contains("object(") && !b.contains(":-") && !b.contains("desires(")){
+						System.out.println("LITERAL POSS: " + b);
+						possibility.add(Literal.parseLiteral(b));
+					}
+				}
+				multiWorldInits.add(possibility);
+
+			} else if (line.contains("RESULT :")){
+				flag = true;
+				multiWorldInits = new ArrayList<>();
+			}
+		}
+		if(multiWorldInits.size() == 1){
+			plannerName = "prp";
+			System.out.println("USING PRP");
+		} else {
+			plannerName = "ndcpces";
+			System.out.println("USING NDCPCES");
+		}
+		System.out.println("INIT WORLDSS: " + multiWorldInits);
+
 
 		//If the planner(X) parameter was specified
 		//select another planner converter

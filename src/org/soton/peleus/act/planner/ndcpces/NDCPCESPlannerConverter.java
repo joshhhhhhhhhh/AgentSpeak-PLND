@@ -91,6 +91,8 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 		}
 		System.out.println("TESTTESTTEST2: " + this.possibilities);
 
+
+		/*
 		for(List<Literal> possibility : this.possibilities){
 			for (Literal literal : possibility) {
 				//Dont want to add objects
@@ -108,7 +110,7 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 					}
 				}
 			}
-		}
+		}*/
 
 		//Transforming Worlds into square versions
 		// NDCPCES Can't handle (oneof (and ...)) so the expressions within the oneof need to be atomic
@@ -209,7 +211,10 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 
 					String temp = this.numericSymbolMap.get(literal.toString().replaceAll("\\d+", "?"));
 					for(Term t : literal.getTerms()){
-						temp = temp.replace("?", t.toString());
+						//System.out.println("OLD LIT: " + temp);
+						//System.out.println("TEST TERM: " + t);
+						temp = temp.replaceFirst("\\?", t.toString());
+						//System.out.println("NEW LIT: " + temp);
 					}
 					ret.add(Literal.parseLiteral(temp));
 
@@ -232,7 +237,7 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 
 									String temp = this.numericSymbolMap.get(literal.toString().replaceAll("\\d+", "?"));
 									for(Term t : literal.getTerms()){
-										temp = temp.replace("?", t.toString());
+										temp = temp.replaceFirst("\\?", t.toString());
 									}
 									ret.add(Literal.parseLiteral(temp));
 
@@ -258,6 +263,8 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 	 *
 	 * Current constraint: ranged beliefs must only have 1 term
 	 */
+
+	//DO NOT USE - OUTDATED
 	private List<Literal> convertToRanges(List<Literal> beliefs) {
 		List<Literal> positivePredicates = new ArrayList<>();
 		List<Literal> negativePredicates = new ArrayList<>();
@@ -325,8 +332,8 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 			Literal ret = Literal.parseLiteral( "oneof");
 			ret.addTerm(Literal.parseLiteral(key));
 			for(int num : ranges.get(key)){
-				ret.addTerm(Literal.parseLiteral(numericSymbolMapping.get(key).replace("?", Integer.toString(num))));
-				this.numericSymbols.add(numericSymbolMapping.get(key).replace("?", ""));
+				ret.addTerm(Literal.parseLiteral(numericSymbolMapping.get(key).replaceFirst("\\?", Integer.toString(num))));
+				this.numericSymbols.add(numericSymbolMapping.get(key).replaceFirst("\\?", ""));
 			}
 			returnValues.add(ret);
 		}

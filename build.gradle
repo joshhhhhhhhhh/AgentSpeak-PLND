@@ -41,7 +41,7 @@ sourceSets {
 task run (type: JavaExec, dependsOn: 'classes') {
     description 'runs the application'
     mainClass = 'jason.infra.local.RunLocalMAS'
-    args = ['examples/Tricky_Grid/Tricky_Grid.mas2j', '--console', '--log-conf', 'logging.properties']
+    args = ['examples/MAPC/mapc.mas2j', '--console', '--log-conf', 'logging.properties']
     classpath sourceSets.main.runtimeClasspath
 }
 
