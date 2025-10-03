@@ -21,7 +21,7 @@ public interface PlannerConverter {
 	 * @param plans A list containing the Agent's plan library.
 	 * @param goals A list containing the stated goals for the proposed problem.
 	 */
-	public void createPlanningProblem(List<Literal> beliefs, List<Plan> plans, List<Term> goals, List<List<Literal>> possibilities);
+	public void createPlanningProblem(List<Literal> beliefs, List<Plan> plans, List<Term> goals, List<List<Literal>> possibilities, int planNumber);
 	
 	/**
 	 * Returns the Goal State for the planning problem converted using this class.  

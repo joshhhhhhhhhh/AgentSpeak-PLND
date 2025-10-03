@@ -33,15 +33,21 @@ public class PRPPlannerConverter implements PlannerConverter {
 
     protected String planName;
 
-    protected static int planNumber = 0;
+    protected  int planNumber;
+
+    //Maps (atx(?) : atx(x_?))
+    private Map<String, String> numericSymbolMap;
 
 
     @Override
-    public void createPlanningProblem(List<Literal> beliefs, List<Plan> plans, List<Term> goals, List<List<Literal>> possibilities) {
+    public void createPlanningProblem(List<Literal> beliefs, List<Plan> plans, List<Term> goals, List<List<Literal>> possibilities, int planNumber) {
         this.objects = new ProblemObjectsImpl();
         this.startState = new StartStateImpl(this);
         this.goalState = new GoalStateImpl();
         this.plans = new ArrayList<>();
+        this.numericSymbolMap = new HashMap<>();
+        this.planNumber = planNumber;
+
 
         for (Iterator<Term> iter = goals.iterator(); iter.hasNext();) {
             Term term = iter.next();
@@ -55,27 +61,6 @@ public class PRPPlannerConverter implements PlannerConverter {
             }
         }
 
-        for (Literal literal : beliefs) {
-            //Dont want to add objects
-            if(literal.getFunctor().startsWith("object")) {
-                continue;
-            }
-            // Adding literals without terms
-            if(!literal.hasTerm()){
-                this.startState.addTerm(literal);
-            } else {
-                //Case for literals with terms
-                //This checks the objects and makes sure that the terms in the initial values match the objects
-                boolean isValidInitialValue = true;
-                for (Term term : literal.getTerms()){
-                   if(!this.objects.getTerms().stream().map(t -> ((Literal)t).getTerm(0)).collect(Collectors.toList()).contains(term)) {
-                       isValidInitialValue = false;
-                   }
-                }
-                if(isValidInitialValue) this.startState.addTerm(literal);
-            }
-        }
-
 
         this.operators = new ProblemOperatorsImpl(this);
 
@@ -83,6 +68,14 @@ public class PRPPlannerConverter implements PlannerConverter {
         for (Plan plan : plans) {
             this.operators.add(plan);
             // logger.info(plan.toString());
+        }
+
+        for (Literal literal : convertNumbers(possibilities.get(0))) {
+            //Dont want to add objects
+            if(literal.getFunctor().startsWith("object")) {
+                continue;
+            }
+            this.startState.addTerm(literal);
         }
 
         this.planName = "plan" + planNumber;
@@ -109,6 +102,64 @@ public class PRPPlannerConverter implements PlannerConverter {
     public ProblemObjects getProblemObjects() {
         return objects;
     }
+
+    private List<Literal> convertNumbers(List<Literal> beliefs){
+        List<Literal> ret = new ArrayList<>();
+        for(Literal literal : beliefs){
+            if(!literal.hasTerm()){
+                ret.add(literal);
+            } else{
+                if(this.numericSymbolMap.containsKey(literal.toString().replaceAll("\\d+", "?"))){
+
+                    String temp = this.numericSymbolMap.get(literal.toString().replaceAll("\\d+", "?"));
+                    for(Term t : literal.getTerms()){
+                        //System.out.println("OLD LIT: " + temp);
+                        //System.out.println("TEST TERM: " + t);
+                        temp = temp.replaceFirst("\\?", t.toString());
+                        //System.out.println("NEW LIT: " + temp);
+                    }
+                    ret.add(Literal.parseLiteral(temp));
+
+                } else if(literal.getTerm(0).isNumeric()) {
+                    for(Plan op : this.operators.getPlans()){
+                        PlanBody body = op.getBody();
+                        Boolean flag = false;
+                        while(body != null){
+                            if(body.getBodyTerm() instanceof Literal) {
+                                Literal lit = (Literal)body.getBodyTerm();
+                                if(lit.getFunctor().equals(literal.getFunctor())) {
+
+                                    String tempTerm = lit.getFunctor() + "(";
+                                    for(Term t : lit.getTerms()){
+                                        tempTerm += t.toString().replaceAll("\\d+", "?") + ",";
+                                    }
+                                    tempTerm = tempTerm.substring(0, tempTerm.length() - 1);
+                                    tempTerm += ")";
+                                    this.numericSymbolMap.put(literal.toString().replaceAll("\\d+", "?"), tempTerm);
+
+                                    String temp = this.numericSymbolMap.get(literal.toString().replaceAll("\\d+", "?"));
+                                    for(Term t : literal.getTerms()){
+                                        temp = temp.replaceFirst("\\?", t.toString());
+                                    }
+                                    ret.add(Literal.parseLiteral(temp));
+
+                                    flag = true;
+                                    System.out.println("BREAKING__: " + this.numericSymbolMap);
+                                    break;
+                                }
+                            }
+                            body = body.getBodyNext();
+
+                        }
+                        if(flag) break;
+                    }
+                }
+
+            }
+        }
+        return ret;
+    }
+
 
     @Override
     public boolean executePlanner(ProblemObjects objects, StartState startState, GoalState goalState, ProblemOperators operators) {
@@ -211,13 +262,34 @@ public class PRPPlannerConverter implements PlannerConverter {
 
     private void parsePRP(String out) throws jason.asSyntax.parser.ParseException {
         String[] policy = out.split("Policy:")[1].replaceAll("strong_negate_", "~").split("\n");
-        LinkedHashMap<List<Literal>, Literal> planMapping = new LinkedHashMap<>();
+        LinkedHashMap<List<String>, Literal> planMapping = new LinkedHashMap<>();
         for(int i=1; i<policy.length-1; i++){
             if (policy[i].startsWith("If holds: ") && policy[i+1].startsWith("Execute")){
-                List<Literal> preds = new ArrayList<>();
+                List<String> preds = new ArrayList<>();
                 String[] predStrings = policy[i].split(": ")[1].split("/");
                 for(String str : predStrings){
-                    preds.add(Literal.parseLiteral(str.replace("\n", "").replace("()", "").trim()));
+
+                    //must have atleast one term in this case
+                    String check = str;
+                    if(str.startsWith("not(")){
+                        check = str.replace("not(", "").replaceFirst("\\)", "");
+                    }
+                    if(numericSymbolMap.containsValue(check.replaceAll("\\d+", "?"))){
+                        String s = check.split("\\(")[0];
+                        s += "(";
+                        for(char c : check.split("\\(")[1].split("\\)")[0].toCharArray()){
+                            if(Character.isDigit(c) || c == ','){
+                                s += c;
+                            }
+                        }
+                        s+=")";
+                        if(str.startsWith("not(")){
+                            s = "not(" + s + ")";
+                        }
+                        preds.add(s);
+                    } else {
+                        preds.add(str.replace("\n", "").replace("()", "").trim());
+                    }
                 }
                 String[] actionStrings = policy[i+1].split(": ")[1].split(" /")[0].split(" ");
                 String action = actionStrings[0];
@@ -235,12 +307,12 @@ public class PRPPlannerConverter implements PlannerConverter {
             }
         }
 
-        for(List<Literal> contextList : planMapping.keySet()){
+        for(List<String> contextList : planMapping.keySet()){
             Trigger trigger = new Trigger(Trigger.TEOperator.add, Trigger.TEType.achieve, Literal.parseLiteral(planName));
 
             String contextString = "";
-            for(Literal b : contextList){
-                contextString += b.toString() + " & ";
+            for(String b : contextList){
+                contextString += b + " & ";
             }
             LogicalFormula context = ASSyntax.parseFormula(contextString.substring(0,contextString.length()-3));
 

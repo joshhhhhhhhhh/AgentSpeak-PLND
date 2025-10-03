@@ -423,7 +423,8 @@ public class AgentSpeakToPDDL {
         if(problemOut.contains("(oneof")){
             domainOut = domainOut.replace("(:requirements :equality :strips :typing :non-deterministic)", "(:requirements :typing)");
         }
-        problemOut = problemOut.replace("(:init", "(:init (and").replace("(:goal", ")(:goal");
+        if(pond)
+            problemOut = problemOut.replace("(:init", "(:init (and").replace("(:goal", ")(:goal");
 
         /*for(String predicate : this.predicates.keySet().stream().filter(p -> this.predicates.get(p).isEmpty()).collect(Collectors.toList())){
             domainOut = domainOut.replace("(" + predicate + " )", predicate).replace("(" + predicate + ")", predicate);

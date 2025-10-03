@@ -8,6 +8,8 @@
 
 //initial beliefs - Initialized in the environment
 
+object(cell, c0).
+
 !des.
 +!des : desires(Goals) <-
     .print("Goals to plan: ", Goals);
@@ -18,8 +20,8 @@
     -dirty(X);
     +clean(X);
     ONEOF_START;
-    -dirty(c48);
-    +clean(c48);
+    -dirty(c3);
+    +clean(c3);
     ONEOF_BREAK;
     ONEOF_END.
 

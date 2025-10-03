@@ -43,7 +43,7 @@ public class JavaGPPlannerConverter implements PlannerConverter {
 	 * @see org.soton.peleus.act.planner.PlannerConverter#createPlanningProblem(java.util.List, java.util.List, java.util.List)
 	 */
 	public void createPlanningProblem(List<Literal> beliefs, List<Plan> plans,
-			List<Term> goals, List<List<Literal>> possibilities) {
+			List<Term> goals, List<List<Literal>> possibilities, int planNumber) {
 		this.startState = new StartStateImpl(beliefs);
 		this.goalState = new GoalStateImpl(goals);
 		this.operators = new ProblemOperatorsImpl(plans);

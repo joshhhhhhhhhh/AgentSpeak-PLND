@@ -15,6 +15,7 @@ import java.util.logging.Logger;
 
         int x;
         int y;
+        int next;
         Map<String, Boolean> obstacles;
         String moved;
         boolean start = true;
@@ -25,6 +26,7 @@ import java.util.logging.Logger;
         public void init(String[] args) {
             this.x = 1;
             this.y = 1;
+            this.next = 0;
             obstacles = new HashMap<String, Boolean>();
             obstacles.put("left", false);
             obstacles.put("right", false);
@@ -50,6 +52,7 @@ import java.util.logging.Logger;
 
         @Override
         public boolean executeAction(String agName, Structure act) {
+
             moved = "none";
             if(act.getFunctor().equals("move_left")) {
                 if(this.x > 0 && !obstacle("left")) {
@@ -62,37 +65,40 @@ import java.util.logging.Logger;
                     moved = "right";
                 }
             } else if(act.getFunctor().equals("move_up")) {
-                if(this.y < 4 && !obstacle("up")) {
-                    this.y += 1;
+                if(this.y > 0 && !obstacle("up")) {
+                    this.y -= 1;
                     moved = "up";
                 }
             } else if(act.getFunctor().equals("move_down")){
-                if(this.y > 0 && !obstacle("down")) {
-                    this.y -= 1;
+                if(this.y < 4 && !obstacle("down")) {
+                    this.y += 1;
                     moved = "down";
                 }
             } else{
                 System.out.println("WRONG ACTION: " + act.getFunctor());
             }
             for(String s : obstacles.keySet()){
-                obstacles.put(s, obstacle(s));
+                this.obstacles.put(s, obstacle(s));
             }
             //logger.info("PERCEPTS BEFORE ACTION: " + getPercepts(agName));
             logger.info(act.getFunctor() + " ACTION TAKEN");
+            logger.info("OBSTACLES: " + obstacles);
             updatePercepts();
+            next += 1;
             return true;
         }
 
         public void updatePercepts(){
             clearPercepts();
             if(!moved.equals("none")){
-                addPercept(Literal.parseLiteral("moved(" + moved + ")"));
+                addPercept(Literal.parseLiteral("moved(" + moved +", " + next + ")"));
             }
             for(String s : obstacles.keySet()){
                 if(obstacles.get(s)){
-                    addPercept(Literal.parseLiteral("obs(" + s + ")"));
+                    logger.info("OBSTACLE DIR:" + s);
+                    addPercept(Literal.parseLiteral("obs(" + s + ", " + next + ")"));
                 } else {
-                    addPercept(Literal.parseLiteral("~obs(" + s + ")"));
+                    addPercept(Literal.parseLiteral("~obs(" + s + ", " + next + ")"));
                 }
             }
 
@@ -101,7 +107,7 @@ import java.util.logging.Logger;
                 addPercept(Literal.parseLiteral("object(y, y_" + i + ")"));
             }
             if(start){
-                addPercept(Literal.parseLiteral("desires([loc(x_2,y_3)])"));
+                addPercept(Literal.parseLiteral("desires([posx(x_2), posy(y_3)])"));
             }
             logger.info("CURRENT LOCATION: X-" + this.x + " Y-" + this.y);
         }

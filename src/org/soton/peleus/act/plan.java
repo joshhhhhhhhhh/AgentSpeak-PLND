@@ -24,11 +24,12 @@ import jason.asSyntax.Structure;
 import jason.asSyntax.Term;
 import jason.asSyntax.Trigger;
 import jason.bb.BeliefBase;
+import jason.asSyntax.PlanBody;
+import jason.asSyntax.PlanBodyImpl;
+import jason.asSyntax.LogicalFormula;
+import jason.asSyntax.parser.ParseException;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.util.logging.Logger;
 
 import org.soton.peleus.act.planner.*;
@@ -56,6 +57,8 @@ public class plan extends DefaultInternalAction {
 	protected static final Term remote = ASSyntax.createAtom("remote");
 
 	protected int planNumber = 0;
+
+	protected List<Term> mixedActions;
 
 	//@SuppressWarnings("unused")
 	private Logger logger = Logger.getLogger(InternalAction.class.getName());
@@ -160,7 +163,7 @@ public class plan extends DefaultInternalAction {
 									List<Plan> plans,
 									List<List<Literal>> multipleWorlds,
 									int maxPlanSteps) {
-		plannerConverter.createPlanningProblem(beliefs, plans, goals, multipleWorlds);
+		plannerConverter.createPlanningProblem(beliefs, plans, goals, multipleWorlds, this.planNumber);
 
 		ProblemObjects objects = plannerConverter.getProblemObjects();
 		StartState startState = plannerConverter.getStartState();
@@ -223,6 +226,43 @@ public class plan extends DefaultInternalAction {
 		planNumber++; //TODO: Convert and execute must be done in sequence
 	}
 
+	protected Plan generateMixedPlan(Term action, List<List<Literal>> multiWorldInits){
+
+		Trigger trigger = new Trigger(Trigger.TEOperator.add, Trigger.TEType.achieve, Literal.parseLiteral("plan" + planNumber));
+
+		Set<Literal> alwaysObserved = new HashSet<>(multiWorldInits.get(0));
+		Set<Literal> partiallyObserved = new HashSet<>(multiWorldInits.get(0));
+		for(int i=1; i<multiWorldInits.size(); i++){
+			alwaysObserved.retainAll(multiWorldInits.get(i));
+			partiallyObserved.addAll(multiWorldInits.get(i));
+		}
+
+		String ctx = "";
+		for(Literal lit : alwaysObserved){
+			partiallyObserved.remove(lit);
+			ctx += lit.toString() + " & ";
+		}
+
+		for(Literal lit : partiallyObserved){
+			ctx += "poss(" + lit.toString() + ") & ";
+		}
+		ctx += "desires(Goal)";
+		LogicalFormula context;
+		try{
+			context = ASSyntax.parseFormula(ctx);
+		} catch (ParseException e){
+			logger.warning("ERROR: " + e);
+			return null;
+		}
+
+		PlanBody actionBody = new PlanBodyImpl(PlanBody.BodyType.action,action);
+		actionBody.add(new PlanBodyImpl(PlanBody.BodyType.internalAction, Literal.parseLiteral("org.soton.peleus.act.plan(Goal, [mixed(true)])")));
+
+		String label = "Generated"+planNumber;
+
+		return new Plan(new Pred(label), trigger, context, actionBody);
+	}
+
 	/**
 	 * Adds the new plan to the intention structure to execute it
 	 * @param plans
@@ -230,6 +270,7 @@ public class plan extends DefaultInternalAction {
 	 * @throws JasonException
 	 */
 	protected void executeNewContingencyPlan(List<Plan> plans, TransitionSystem ts) throws JasonException {
+		Collections.reverse(plans);
 		for(Plan plan : plans){
 			logger.info("Adding new plan: "+System.getProperty("line.separator")+plan);
 			ts.getAg().getPL().add(plan,true);
@@ -274,6 +315,11 @@ public class plan extends DefaultInternalAction {
 		//Whether or not to use remote operators
 		boolean useRemote = false;
 		String plannerName = null;
+		boolean mixed = false;
+		if(this.mixedActions == null) {
+			this.mixedActions = new ArrayList<>();
+		}
+
 
 		for(int i=0; i<params.size(); i++) {
 			Structure param = (Structure) params.get(i);
@@ -288,6 +334,8 @@ public class plan extends DefaultInternalAction {
 				useRemote = Boolean.parseBoolean(param.getTerm(0).toString());
 			} else if(param.getFunctor().equals("planner")) {
 				plannerName = param.getTerm(0).toString();
+			} else if(param.getFunctor().equals("mixed")) {
+				mixed = Boolean.parseBoolean(param.getTerm(0).toString());
 			}
 		}
 
@@ -297,7 +345,7 @@ public class plan extends DefaultInternalAction {
 		List<Literal> beliefs = selectRelevantBeliefs(beliefBase);
 		logger.info("beliefBase: "+beliefBase);
 		for(Literal belief : beliefs) {
-			logger.info("BEL: _"+belief+"_");
+			//logger.info("BEL: _"+belief+"_");
 		}
 
 		//Extract the plans from the plan library to generate
@@ -321,7 +369,7 @@ public class plan extends DefaultInternalAction {
 		for(Path path : Files.walk(Paths.get("../PLANNERS/epistemic-reasoner/logs")).toList()){
 			if(path.toString().toLowerCase().endsWith(".log")){
 				logFileName = path.toString();
-				System.out.println("FILE: " + path.toString());
+				//System.out.println("FILE: " + path.toString());
 			}
 		}
 		File logFile = new File(logFileName);
@@ -340,8 +388,8 @@ public class plan extends DefaultInternalAction {
 				}
 				List<Literal> possibility = new ArrayList<>();
 				for(String b : data[data.length-1].replace("\n", "").replaceAll("\\)", "))").split("\\),")){
-					if(!b.contains("object(") && !b.contains(":-") && !b.contains("desires(")){
-						System.out.println("LITERAL POSS: " + b);
+					if(!b.contains("object(") && !b.contains(":-") && !b.contains("desires(") && !b.contains("[") && !b.contains("]")){
+						//System.out.println("LITERAL POSS: " + b);
 						possibility.add(Literal.parseLiteral(b));
 					}
 				}
@@ -373,27 +421,45 @@ public class plan extends DefaultInternalAction {
 		}
 
 		//Invoke the planner
-		boolean planFound = invokePlanner(beliefs, goals, plans, multiWorldInits, maxPlanSteps);
+		if(!mixed || ((plannerName.equals("ndcpces") && mixedActions.isEmpty()) || plannerName.equals("prp"))) {
+			boolean planFound = invokePlanner(beliefs, goals, plans, multiWorldInits, maxPlanSteps);
 
-		if(!planFound) {
-			logger.info("Plan not Found!!!");
-			return false;
+			if(!planFound) {
+				logger.info("Plan not Found!!!");
+				return false;
+			}
 		}
+
+		if(mixed && mixedActions.isEmpty() && plannerName.equals("ndcpces")){
+			PlanBody curr = plannerConverter.getAgentSpeakPlan(false).getBody();
+			while(curr != null){
+				mixedActions.add(curr.getBodyTerm());
+				curr = curr.getBodyNext();
+			}
+		}
+
 
 		if(plannerName.equals("prp")) {
 			logger.info("Contingency plan cannot be converted.");
 
 			executeNewContingencyPlan(plannerConverter.getContingencyPlan(), ts);
+			mixedActions.clear();
 		} else {
-			logger.info("Converting plan...");
-			Plan plan = convertPlan(makeGeneric, makeAtomic, useRemote);
-
+			Plan plan;
+			if(mixed && !mixedActions.isEmpty() && plannerName.equals("ndcpces")) {
+				Term action = mixedActions.remove(0);
+				plan = generateMixedPlan(action, multiWorldInits);
+			} else {
+				logger.info("Converting plan...");
+				plan = convertPlan(makeGeneric, makeAtomic, useRemote);
+			}
 			logger.info("Executing plan...");
 			executeNewPlan(plan, ts);
 		}
 
 		double endTime = System.currentTimeMillis();
 		System.out.println("TOTAL TIME: " + (endTime - startTime));
+		System.out.println("FINAL PLAN LIBRARY: " + ts.getAg().getPL());
 		return true;
 	}
 

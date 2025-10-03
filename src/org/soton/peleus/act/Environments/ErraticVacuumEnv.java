@@ -34,7 +34,7 @@ public class ErraticVacuumEnv extends Environment {
     @Override
     public boolean executeAction(String agName, Structure act) {
         this.r = new Random();
-        if(act.getFunctor().equals("suck")){
+        if(act.getFunctor().equals("suck") || act.getFunctor().equals("suck1") || act.getFunctor().equals("suck2") || act.getFunctor().equals("suck3") || act.getFunctor().equals("suck4")){
             if(cellStates[pos] == 1){
                 cellStates[pos] = 0;
                 //addPercept(Literal.parseLiteral("clean(" + pos + ")"));

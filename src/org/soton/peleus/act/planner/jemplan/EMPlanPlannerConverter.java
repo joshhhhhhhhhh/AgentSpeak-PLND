@@ -49,13 +49,12 @@ public class EMPlanPlannerConverter implements PlannerConverter {
 	/* (non-Javadoc)
 	 * @see org.soton.peleus.act.planner.PlannerConverter#createPlanningProblem(java.util.List, java.util.List, java.util.List)
 	 */
-	public void createPlanningProblem(List<Literal> beliefs, List<Plan> plans, List<Term> goals, List<List<Literal>> possibilities) {
+	public void createPlanningProblem(List<Literal> beliefs, List<Plan> plans, List<Term> goals, List<List<Literal>> possibilities, int planNumber) {
 		startState = new StartStateImpl(this);
 		goalState = new GoalStateImpl();
 		operators = new ProblemOperatorsImpl(this);
 		//XXX This variable is created just so the user don't get a null pointer when requesting for the objects
 		objects = new ProblemObjectsImpl();
-		
 		goalState.addAll(goals);
 		
 		for (Literal literal : beliefs) {

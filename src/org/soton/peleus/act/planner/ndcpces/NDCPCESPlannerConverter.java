@@ -51,13 +51,13 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 	private Map<String, String> numericSymbolMap;
 
 	@Override
-	public void createPlanningProblem(List<Literal> beliefs, List<Plan> plans, List<Term> goals, List<List<Literal>> possibilities) {
+	public void createPlanningProblem(List<Literal> beliefs, List<Plan> plans, List<Term> goals, List<List<Literal>> possibilities, int planNumber) {
 		this.objects = new ProblemObjectsImpl();
 		//this.startState = new StartStateImpl(this);
 		this.goalState = new GoalStateImpl();
 		this.numericSymbolMap = new HashMap<>();
 		this.possibilities = new ArrayList<>();
-
+		this.planNumber = planNumber;
 
 		//this.plan = new ArrayList<>();
 		List<Literal> tempStartState = new ArrayList<>();
@@ -356,7 +356,7 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 			double startTime = System.currentTimeMillis();
 
 			String[] command = new String[]{
-					"ndcpces", "-o" , "domain.pddl", "-f" , "task.pddl"
+					"ndcpces", "-o" , "mapcD.pddl", "-f" , "mapcP.pddl"
 			};
 			Process proc = new ProcessBuilder(command).start();
 
