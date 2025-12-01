@@ -153,6 +153,8 @@ public class PRPPlannerConverter implements PlannerConverter {
                         }
                         if(flag) break;
                     }
+                } else {
+                    ret.add(literal);
                 }
 
             }
@@ -166,9 +168,17 @@ public class PRPPlannerConverter implements PlannerConverter {
         AgentSpeakToPDDL pddlCreator = new AgentSpeakToPDDL();
 
         try {
+            //double startStep2 = System.currentTimeMillis();
+            System.gc();
+            double startStep2 = (Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory())/1024.0/1024.0;
 
 
             pddlCreator.generateFONDPDDL(objects, startState, goalState, operators);
+
+            //double plannerStarting = System.currentTimeMillis();
+            System.gc();
+            double plannerStarting = (Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory())/1024.0/1024.0;
+
 
             String[] command;
 
@@ -178,7 +188,15 @@ public class PRPPlannerConverter implements PlannerConverter {
             };
 
             Process proc1 = new ProcessBuilder(command).start();
+            /*
+            BufferedReader testReader = new BufferedReader(new InputStreamReader(proc1.getInputStream()));
 
+            String line1 = "";
+            while ((line1 = testReader.readLine()) != null) {
+                //policy += line + "\n";
+                System.out.println(line1);
+            }
+            */
             BufferedReader errorReader = new BufferedReader(new InputStreamReader(proc1.getErrorStream()));
             String errorLine = "";
             while ((errorLine = errorReader.readLine()) != null) {
@@ -197,6 +215,7 @@ public class PRPPlannerConverter implements PlannerConverter {
 
             String policy = "";
             String line = "";
+            System.out.println("TESTTESTTEST");
             while ((line = reader.readLine()) != null) {
                 policy += line + "\n";
                 System.out.println(line + "\n");
@@ -208,8 +227,22 @@ public class PRPPlannerConverter implements PlannerConverter {
                 logger.warning("***PRP TRANSLATION ERROR***: " + errorLine);
             }
             proc.waitFor();
+            //double step2Done = System.currentTimeMillis();
+            System.gc();
+            double step2Done = (Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory())/1024.0/1024.0;
 
             parsePRP(policy);
+            //double step3Done = System.currentTimeMillis();
+            System.gc();
+            double step3Done = (Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory())/1024.0/1024.0;
+
+
+
+            System.out.println("TIMETAKEN GENERATE PDDL (STEP 2): " + (plannerStarting-startStep2));
+            System.out.println("TIMETAKEN PLANNER RUNNING (STEP 2): " + (step2Done-plannerStarting));
+            System.out.println("TIMETAKEN GENERATE PLANS (STEP 3): " + (step3Done-step2Done));
+
+
         } catch (IOException | InterruptedException | ParseException e){
             logger.warning(e.getMessage());
             return false;

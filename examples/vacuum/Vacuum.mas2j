@@ -1,6 +1,6 @@
 MAS vacuum {
 
-        environment: org.soton.peleus.act.Environments.ErraticVacuumEnv(5)
+        environment: org.soton.peleus.act.Environments.ErraticVacuumEnv(2)
 
         agents: vacuum
         agentClass epistemic_jason.asSemantics.AgentEpistemic;

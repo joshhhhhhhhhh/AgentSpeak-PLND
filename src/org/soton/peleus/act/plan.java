@@ -8,6 +8,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.apache.commons.io.input.ReversedLinesFileReader;
+
 import jason.JasonException;
 import jason.asSemantics.DefaultInternalAction;
 import jason.asSemantics.InternalAction;
@@ -281,7 +283,14 @@ public class plan extends DefaultInternalAction {
 	//@SuppressWarnings("unchecked")
 	public Object execute(TransitionSystem ts, Unifier un, Term[] args)
 			throws Exception {
-		double startTime = System.currentTimeMillis();
+
+		Thread.sleep(5000);
+
+		//double startTime = System.currentTimeMillis();
+		System.gc();
+		double startTime = (Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory())/1024.0/1024.0;
+
+
 		logger.info("args[0]: "+args[0]+" / args[1]: "+args[1]);
 		//First check that the action was properly invoked with an AgentSpeak
 		//list as its parameter.
@@ -362,6 +371,10 @@ public class plan extends DefaultInternalAction {
 				break;
 			}
 		}
+		//double initialSetup = System.currentTimeMillis();
+		System.gc();
+		double initialSetup = (Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory())/1024.0/1024.0;
+
 
 		plannerName = "ndcpces";
 		String logFileName = "";
@@ -374,7 +387,37 @@ public class plan extends DefaultInternalAction {
 		}
 		File logFile = new File(logFileName);
 		Scanner s = new Scanner(logFile);
+		ReversedLinesFileReader r = new ReversedLinesFileReader(logFile);
 		boolean flag = false;
+		String line = "";
+		do{
+			line = r.readLine();
+			if(line.matches("\\d*_.*")){
+				flag = true;
+
+				String[] data = line.split(" : ");
+				//System.out.println("TESTEST DATA: "+data);
+
+				List<Literal> possibility = new ArrayList<>();
+				boolean outsideList = true;
+				for(String b : data[data.length-1].replace("\n", "").replaceAll("\\)", "))").split("\\),")){
+					if(b.contains("[")){
+						outsideList = false;
+					} else if(b.contains("]")){
+						outsideList = true;
+					} if(!b.contains("object(") && !b.contains(":-") && !b.contains("desires(") && !b.contains("[") && !b.contains("]") && outsideList){
+						//System.out.println("LITERAL POSS: " + b);
+						possibility.add(Literal.parseLiteral(b));
+					}
+				}
+				multiWorldInits.add(possibility);
+
+			} else if(flag){
+				break;
+			}
+		}while(line != null);
+		r.close();
+		/*
 		while(s.hasNextLine()){
 			String line = s.nextLine();
 			//System.out.println(line);
@@ -387,8 +430,13 @@ public class plan extends DefaultInternalAction {
 					continue;
 				}
 				List<Literal> possibility = new ArrayList<>();
+				boolean outsideList = true;
 				for(String b : data[data.length-1].replace("\n", "").replaceAll("\\)", "))").split("\\),")){
-					if(!b.contains("object(") && !b.contains(":-") && !b.contains("desires(") && !b.contains("[") && !b.contains("]")){
+					if(b.contains("[")){
+						outsideList = false;
+					} else if(b.contains("]")){
+						outsideList = true;
+					} if(!b.contains("object(") && !b.contains(":-") && !b.contains("desires(") && !b.contains("[") && !b.contains("]") && outsideList){
 						//System.out.println("LITERAL POSS: " + b);
 						possibility.add(Literal.parseLiteral(b));
 					}
@@ -400,6 +448,10 @@ public class plan extends DefaultInternalAction {
 				multiWorldInits = new ArrayList<>();
 			}
 		}
+		s.close();
+		*/
+
+		System.out.println("STARTING STATE: " + multiWorldInits);
 		if(multiWorldInits.size() == 1){
 			plannerName = "prp";
 			System.out.println("USING PRP");
@@ -407,7 +459,11 @@ public class plan extends DefaultInternalAction {
 			plannerName = "ndcpces";
 			System.out.println("USING NDCPCES");
 		}
-		System.out.println("INIT WORLDSS: " + multiWorldInits);
+		//System.out.println("INIT WORLDSS: " + multiWorldInits);
+
+		//double modelReading = System.currentTimeMillis();
+		System.gc();
+		double modelReading = (Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory())/1024.0/1024.0;
 
 
 		//If the planner(X) parameter was specified
@@ -440,7 +496,7 @@ public class plan extends DefaultInternalAction {
 
 
 		if(plannerName.equals("prp")) {
-			logger.info("Contingency plan cannot be converted.");
+			//logger.info("Contingency plan cannot be converted.");
 
 			executeNewContingencyPlan(plannerConverter.getContingencyPlan(), ts);
 			mixedActions.clear();
@@ -457,9 +513,16 @@ public class plan extends DefaultInternalAction {
 			executeNewPlan(plan, ts);
 		}
 
-		double endTime = System.currentTimeMillis();
-		System.out.println("TOTAL TIME: " + (endTime - startTime));
-		System.out.println("FINAL PLAN LIBRARY: " + ts.getAg().getPL());
+		//double endTime = System.currentTimeMillis();
+		System.gc();
+		double endTime = (Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory())/1024.0/1024.0;
+
+
+		System.out.println("TIMETAKEN INIT SETUP: " + (initialSetup - startTime));
+		System.out.println("TIMETAKEN MODEL READING: " + (modelReading - initialSetup));
+		System.out.println("TIMETAKEN TOTAL: " + (endTime - startTime));
+		//System.out.println("FINAL PLAN LIBRARY: " + ts.getAg().getPL());
+		Thread.sleep(10000);
 		return true;
 	}
 

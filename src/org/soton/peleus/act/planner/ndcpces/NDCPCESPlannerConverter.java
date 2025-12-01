@@ -350,10 +350,12 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 	public boolean executePlanner(ProblemObjects objects, StartState startState, GoalState goalState, ProblemOperators operators, int maxPlanSteps) {
 		AgentSpeakToPDDL pddlCreator = new AgentSpeakToPDDL();
 
+		double startStep2 = System.currentTimeMillis();
+
 		pddlCreator.generatePONDPDDL(objects, this.alwaysObserved, this.partiallyObserved, goalState, operators);
 		try {
 
-			double startTime = System.currentTimeMillis();
+			double plannerStarting = System.currentTimeMillis();
 
 			String[] command = new String[]{
 					"ndcpces", "-o" , "mapcD.pddl", "-f" , "mapcP.pddl"
@@ -366,29 +368,36 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 			String line = "";
 			while ((line = reader.readLine()) != null) {
 				policy += line + "\n";
-				System.out.println(line + "\n");
+				//System.out.println(line + "\n");
 			}
 			// Reading the error output
-			BufferedReader errorReader = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
+			//BufferedReader errorReader = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
 			String errorLine = "";
-			while ((errorLine = errorReader.readLine()) != null) {
-				logger.warning("***NDCPCES TRANSLATION ERROR***: " + errorLine);
-			}
-			proc.waitFor();
+			//while ((errorLine = errorReader.readLine()) != null) {
+				//logger.warning("***NDCPCES TRANSLATION ERROR***: " + errorLine);
+			//}
+			//proc.waitFor();
 
-			double afterPlanner = System.currentTimeMillis();
+			double step2Done = System.currentTimeMillis();
 
 			parseNDCPCES(policy);
 
-			double afterParse = System.currentTimeMillis();
+			double step3Done = System.currentTimeMillis();
 
-			System.out.println("Planning Time: " + (afterPlanner-startTime));
-			System.out.println("Plan Generation Time: " + (afterParse-afterPlanner));
+			//System.out.println("Planning Time: " + (afterPlanner-startTime));
+			//System.out.println("Plan Generation Time: " + (afterParse-afterPlanner));
 
-		} catch (IOException | InterruptedException e){
+			System.out.println("TIMETAKEN GENERATE PDDL (STEP 2): " + (plannerStarting-startStep2));
+			System.out.println("TIMETAKEN PLANNER RUNNING (STEP 2): " + (step2Done-plannerStarting));
+			System.out.println("TIMETAKEN GENERATE PLANS (STEP 3): " + (step3Done-step2Done));
+
+		} catch (IOException e){
 			logger.warning("IOException: " + e.getMessage());
 			return false;
 		}
+
+
+
 
 
 
@@ -431,8 +440,7 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 		}
 		String label = "Generated"+planNumber;
 		this.plan = new Plan(new Pred(label), trigger, context, start);
-		System.out.println("PLAN CREATED: " + this.plan);
-		//System.out.println("PLAN: " + plan);
+		//System.out.println("PLAN CREATED: " + this.plan);
 	}
 	
 	public boolean executePlanner(ProblemObjects objects,

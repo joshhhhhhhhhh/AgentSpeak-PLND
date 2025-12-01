@@ -19,7 +19,7 @@ dependencies {
     //implementation group: 'com.mvezina', name:'epistemic-agents', version:  '1.0-SNAPSHOT', changing: true
     //implementation 'io.github.jason-lang:jason-interpreter:3.2.0'
 
-
+    implementation group: 'commons-io', name: 'commons-io', version: '2.6'
     implementation 'com.google.code.gson:gson:2.8.5'
     implementation 'org.jetbrains:annotations:19.0.0'
 
@@ -41,7 +41,7 @@ sourceSets {
 task run (type: JavaExec, dependsOn: 'classes') {
     description 'runs the application'
     mainClass = 'jason.infra.local.RunLocalMAS'
-    args = ['examples/MAPC/mapc.mas2j', '--console', '--log-conf', 'logging.properties']
+    args = ['examples/vacuum/Vacuum.mas2j', '--console', '--log-conf', 'logging.properties']
     classpath sourceSets.main.runtimeClasspath
 }
 

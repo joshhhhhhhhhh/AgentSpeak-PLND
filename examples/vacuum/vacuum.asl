@@ -16,12 +16,12 @@ object(cell, c0).
     org.soton.peleus.act.plan(Goals, [makeGeneric(false)]);
     +start(system.time).
 
-@action1[type(X, cell, temp)] +!suck1(X) : pos(X) & dirty(X) & linked(c3, X) <-
+@action1[type(X, cell, temp)] +!suck1(X) : pos(X) & dirty(X) & linked(c0, X) <-
     -dirty(X);
     +clean(X);
     ONEOF_START;
-    -dirty(c3);
-    +clean(c3);
+    -dirty(c0);
+    +clean(c0);
     ONEOF_BREAK;
     ONEOF_END.
 

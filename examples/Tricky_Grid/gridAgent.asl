@@ -2,7 +2,7 @@
 
 
 //range requires numbers, but they don't work with planners
-//Solution: Include only numbers in jason, and when translating for a planner
+//Include only numbers in jason, and when translating for a planner
 // which uses epistemicjason add a a character in front of all of them
 
 //semi_numeric:
@@ -13,12 +13,7 @@
 // These ranges will then be altered when being translated into planning problems.
 // The planning problem outputs will be translated back into numbers.
 
-//object(x_0, x)...
-//TODO:
-//  Implement Semi-Numerics
-//  Add NDCPCES input/output window
-//  test it!!
-//  Create simple tricky grid env
+
 
 //poss(test_case).
 range(atx(X)) :- .range(X, 1, 3).

@@ -433,7 +433,7 @@ public class AgentSpeakToPDDL {
 
         //Creating Domain File
         try{
-            System.out.println(domainOut);
+            //System.out.println(domainOut);
             File domainFile = new File("domain.pddl");
             domainFile.createNewFile();
             FileWriter writer = new FileWriter("domain.pddl");
@@ -445,7 +445,7 @@ public class AgentSpeakToPDDL {
 
         //Creating Problem File
         try{
-            System.out.println(problemOut);
+            //System.out.println(problemOut);
             File problemFile = new File("task.pddl");
             problemFile.createNewFile();
             FileWriter writer = new FileWriter("task.pddl");
