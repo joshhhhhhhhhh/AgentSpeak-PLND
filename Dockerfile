@@ -41,6 +41,7 @@ RUN apt-get update && apt-get install -y \
         tar \
         unzip \
         apache2 \
+        dos2unix \
     && apt-get clean 
 
 
@@ -172,6 +173,8 @@ RUN chmod -R 777 /PLANNERS/bin
 WORKDIR /AGENTSPEAK-PLND
 
 COPY . .
+
+RUN dos2unix docker_startup.sh
 
 RUN gradle build
 #CMD ["ls"]
