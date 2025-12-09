@@ -169,7 +169,7 @@ RUN echo "python3 /PLANNERS/ndcpces/ndcpces.py -decomposition true -lookahead_mo
 ENV PATH="/PLANNERS/bin:${PATH}"
 RUN chmod -R 777 /PLANNERS/bin
 
-WORKDIR /PELEUS
+WORKDIR /AGENTSPEAK-PLND
 
 COPY . .
 
