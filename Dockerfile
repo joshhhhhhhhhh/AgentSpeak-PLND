@@ -176,6 +176,8 @@ COPY . .
 
 RUN dos2unix docker_startup.sh
 
+RUN gradle wrapper
+
 RUN gradle build
 #CMD ["ls"]
 ENTRYPOINT ["/bin/bash", "docker_startup.sh"]
