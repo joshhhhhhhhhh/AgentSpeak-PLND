@@ -81,11 +81,13 @@ public class ErraticVacuumEnv extends Environment {
                 //(Literal.parseLiteral("clean(" + pos + ")"));
                 pos+=1;
             }
-        } else {
-            System.out.println("WRONG ACTION: " + act.getFunctor());
-        }
+        } //else {
+            //System.out.println("WRONG ACTION: " + act.getFunctor());
+        //}
         //logger.info("PERCEPTS BEFORE ACTION: " + getPercepts(agName));
-        logger.info(act.getFunctor() + " ACTION TAKEN");
+
+        String actionTaken = act.getFunctor().contains("suck") ? "suck" : act.getFunctor();
+        logger.info(actionTaken + " ACTION TAKEN");
 
         updatePercepts();
         /*
@@ -134,7 +136,7 @@ public class ErraticVacuumEnv extends Environment {
             }
         }
         addPercept(Literal.parseLiteral("desires(" + Arrays.toString(cleans) + ")"));
-        //logger.info("CURRENT PERCEPTS: " + perceptLog);
+        logger.info("CURRENT BELIEFS: " + perceptLog);
     }
 
 }

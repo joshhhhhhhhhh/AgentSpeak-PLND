@@ -144,7 +144,7 @@ public class PRPPlannerConverter implements PlannerConverter {
                                     ret.add(Literal.parseLiteral(temp));
 
                                     flag = true;
-                                    System.out.println("BREAKING__: " + this.numericSymbolMap);
+                                    //System.out.println("BREAKING__: " + this.numericSymbolMap);
                                     break;
                                 }
                             }
@@ -169,15 +169,15 @@ public class PRPPlannerConverter implements PlannerConverter {
 
         try {
             //double startStep2 = System.currentTimeMillis();
-            System.gc();
-            double startStep2 = (Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory())/1024.0/1024.0;
+            //System.gc();
+            //double startStep2 = (Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory())/1024.0/1024.0;
 
 
             pddlCreator.generateFONDPDDL(objects, startState, goalState, operators);
 
             //double plannerStarting = System.currentTimeMillis();
-            System.gc();
-            double plannerStarting = (Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory())/1024.0/1024.0;
+            //System.gc();
+            //double plannerStarting = (Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory())/1024.0/1024.0;
 
 
             String[] command;
@@ -188,15 +188,15 @@ public class PRPPlannerConverter implements PlannerConverter {
             };
 
             Process proc1 = new ProcessBuilder(command).start();
-            /*
-            BufferedReader testReader = new BufferedReader(new InputStreamReader(proc1.getInputStream()));
 
-            String line1 = "";
-            while ((line1 = testReader.readLine()) != null) {
+            //BufferedReader testReader = new BufferedReader(new InputStreamReader(proc1.getInputStream()));
+
+            //String line1 = "";
+            //while ((line1 = testReader.readLine()) != null) {
                 //policy += line + "\n";
-                System.out.println(line1);
-            }
-            */
+                //System.out.println(line1);
+            //}
+
             BufferedReader errorReader = new BufferedReader(new InputStreamReader(proc1.getErrorStream()));
             String errorLine = "";
             while ((errorLine = errorReader.readLine()) != null) {
@@ -215,10 +215,12 @@ public class PRPPlannerConverter implements PlannerConverter {
 
             String policy = "";
             String line = "";
-            System.out.println("TESTTESTTEST");
+            //System.out.println("TESTTESTTEST");
+            boolean flagOut = false;
             while ((line = reader.readLine()) != null) {
                 policy += line + "\n";
-                System.out.println(line + "\n");
+                if (line.contains("Policy")) flagOut = true;
+                if (flagOut) System.out.println(line + "\n");
             }
             // Reading the error output
             errorReader = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
@@ -228,19 +230,19 @@ public class PRPPlannerConverter implements PlannerConverter {
             }
             proc.waitFor();
             //double step2Done = System.currentTimeMillis();
-            System.gc();
-            double step2Done = (Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory())/1024.0/1024.0;
+            //System.gc();
+            //double step2Done = (Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory())/1024.0/1024.0;
 
             parsePRP(policy);
             //double step3Done = System.currentTimeMillis();
-            System.gc();
-            double step3Done = (Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory())/1024.0/1024.0;
+            //System.gc();
+            //double step3Done = (Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory())/1024.0/1024.0;
 
 
 
-            System.out.println("TIMETAKEN GENERATE PDDL (STEP 2): " + (plannerStarting-startStep2));
-            System.out.println("TIMETAKEN PLANNER RUNNING (STEP 2): " + (step2Done-plannerStarting));
-            System.out.println("TIMETAKEN GENERATE PLANS (STEP 3): " + (step3Done-step2Done));
+            //System.out.println("TIMETAKEN GENERATE PDDL (STEP 2): " + (plannerStarting-startStep2));
+            //System.out.println("TIMETAKEN PLANNER RUNNING (STEP 2): " + (step2Done-plannerStarting));
+            //System.out.println("TIMETAKEN GENERATE PLANS (STEP 3): " + (step3Done-step2Done));
 
 
         } catch (IOException | InterruptedException | ParseException e){

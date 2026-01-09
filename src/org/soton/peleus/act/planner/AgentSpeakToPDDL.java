@@ -372,8 +372,8 @@ public class AgentSpeakToPDDL {
                 problem.addInitialFact(new Expression(initExp));
             }
         }
-        System.out.println("Init: " + problem.getInit());
-        System.out.println("INIT DONE");
+        //System.out.println("Init: " + problem.getInit());
+        //System.out.println("INIT DONE");
 
         //Adds Predicates
         //Predicates are retrieved from the initial beliefs and the actions
@@ -423,8 +423,11 @@ public class AgentSpeakToPDDL {
         if(problemOut.contains("(oneof")){
             domainOut = domainOut.replace("(:requirements :equality :strips :typing :non-deterministic)", "(:requirements :typing)");
         }
-        if(pond)
+        if(pond){
             problemOut = problemOut.replace("(:init", "(:init (and").replace("(:goal", ")(:goal");
+            domainOut = domainOut.replace(":parameters ()\n", "").replace(":precondition \n  (and)", "");
+        }
+
 
         /*for(String predicate : this.predicates.keySet().stream().filter(p -> this.predicates.get(p).isEmpty()).collect(Collectors.toList())){
             domainOut = domainOut.replace("(" + predicate + " )", predicate).replace("(" + predicate + ")", predicate);
@@ -501,7 +504,7 @@ public class AgentSpeakToPDDL {
                 }
             }
             else {
-                if(!this.predicates.containsKey(((Literal) term).getFunctor())){
+                if(!this.predicates.containsKey(((Literal) term).getFunctor()) && term.toString() != "false"){
                     this.predicates.put(term.toString(), Collections.emptyList());
                 }
             }

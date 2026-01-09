@@ -352,10 +352,10 @@ public class plan extends DefaultInternalAction {
 		//as the initial state for the planning problem
 		BeliefBase beliefBase = ts.getAg().getBB();
 		List<Literal> beliefs = selectRelevantBeliefs(beliefBase);
-		logger.info("beliefBase: "+beliefBase);
-		for(Literal belief : beliefs) {
+		//logger.info("beliefBase: "+beliefBase);
+		//for(Literal belief : beliefs) {
 			//logger.info("BEL: _"+belief+"_");
-		}
+		//}
 
 		//Extract the plans from the plan library to generate
 		//STRIPS operators in the conversion process
@@ -363,7 +363,7 @@ public class plan extends DefaultInternalAction {
 		List<Plan> plans = planLibrary.getPlans();
 		List<List<Literal>> multiWorldInits = new ArrayList<>();
 		plans = selectUseablePlans(plans, useRemote);
-		logger.info("planLibrary: "+planLibrary);
+		//logger.info("planLibrary: "+planLibrary);
 
 		for(Plan plan : plans){
 			if (plan.toString().toLowerCase().contains("oneof")){
@@ -400,18 +400,45 @@ public class plan extends DefaultInternalAction {
 
 				List<Literal> possibility = new ArrayList<>();
 				boolean outsideList = true;
-				for(String b : data[data.length-1].replace("\n", "").replaceAll("\\)", "))").split("\\),")){
-					if(b.contains("[")){
-						outsideList = false;
-					} else if(b.contains("]")){
-						outsideList = true;
-					} if(!b.contains("object(") && !b.contains(":-") && !b.contains("desires(") && !b.contains("[") && !b.contains("]") && outsideList){
-						//System.out.println("LITERAL POSS: " + b);
-						possibility.add(Literal.parseLiteral(b));
-					}
-				}
-				multiWorldInits.add(possibility);
+				String strWorldList = data[data.length-1].replace("\n", "");
 
+
+				int depth = 0;
+				String curr = "";
+
+				for (int i = 0; i < strWorldList.length(); i++) {
+					char b = strWorldList.charAt(i);
+
+				//for(String b : data[data.length-1].replace("\n", "").replaceAll("\\)", "))").split(",")){
+					if(b == '[' || b == '('){
+						depth++;
+					} else if(b == ']' || b == ')'){
+						depth--;
+					}
+
+					if (b == ',' && depth == 0) {
+
+						if(!curr.contains("object(") && !curr.contains(":-") && !curr.contains("desires(") && !curr.contains("[") && !curr.contains("]")){
+							possibility.add(Literal.parseLiteral(curr));
+						}
+						curr = "";
+					} else {
+						curr += b;
+					}
+
+					//if(!b.contains("object(") && !b.contains(":-") && !b.contains("desires(") && !b.contains("[") && !b.contains("]") && outsideList){
+						//System.out.println("LITERAL POSS: " + b);
+					//	possibility.add(Literal.parseLiteral(b));
+					//}
+				}
+
+				if(!curr.contains("object(") && !curr.contains(":-") && !curr.contains("desires(") && !curr.contains("[") && !curr.contains("]")){
+					possibility.add(Literal.parseLiteral(curr.trim()));
+				}
+				curr = "";
+
+				multiWorldInits.add(possibility);
+				System.out.println("POSSIBILITY: " + possibility);
 			} else if(flag){
 				break;
 			}
@@ -459,7 +486,7 @@ public class plan extends DefaultInternalAction {
 			plannerName = "ndcpces";
 			System.out.println("USING NDCPCES");
 		}
-		//System.out.println("INIT WORLDSS: " + multiWorldInits);
+		//System.out.println("INIT WORLDS: " + multiWorldInits);
 
 		//double modelReading = System.currentTimeMillis();
 		System.gc();
@@ -518,11 +545,11 @@ public class plan extends DefaultInternalAction {
 		double endTime = (Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory())/1024.0/1024.0;
 
 
-		System.out.println("TIMETAKEN INIT SETUP: " + (initialSetup - startTime));
-		System.out.println("TIMETAKEN MODEL READING: " + (modelReading - initialSetup));
-		System.out.println("TIMETAKEN TOTAL: " + (endTime - startTime));
+		//System.out.println("TIMETAKEN INIT SETUP: " + (initialSetup - startTime));
+		//System.out.println("TIMETAKEN MODEL READING: " + (modelReading - initialSetup));
+		//System.out.println("TIMETAKEN TOTAL: " + (endTime - startTime));
 		//System.out.println("FINAL PLAN LIBRARY: " + ts.getAg().getPL());
-		Thread.sleep(10000);
+		//Thread.sleep(10000);
 		return true;
 	}
 

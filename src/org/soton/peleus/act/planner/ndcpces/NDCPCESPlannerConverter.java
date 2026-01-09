@@ -83,13 +83,13 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 		}
 
 
-		System.out.println("OBJECTS: " + this.objects.getTerms());
-		System.out.println("BELIEFS: " + beliefs);
+		//System.out.println("OBJECTS: " + this.objects.getTerms());
+		//System.out.println("BELIEFS: " + beliefs);
 
 		for(List<Literal> p: possibilities){
 			this.possibilities.add(convertNumbers(p));
 		}
-		System.out.println("TESTTESTTEST2: " + this.possibilities);
+		//System.out.println("TESTTESTTEST2: " + this.possibilities);
 
 
 		/*
@@ -120,8 +120,8 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 			this.alwaysObserved.retainAll(this.possibilities.get(i));
 			this.alwaysObservedRaw.retainAll(possibilities.get(i));
 		}
-		System.out.println("FULLY OBSERVABLE BELIEFS: " + this.alwaysObserved);
-		System.out.println("FULLY OBSERVABLE BELIEFS RAW: " + this.alwaysObservedRaw);
+		//System.out.println("FULLY OBSERVABLE BELIEFS: " + this.alwaysObserved);
+		//System.out.println("FULLY OBSERVABLE BELIEFS RAW: " + this.alwaysObservedRaw);
 
 
 		this.partiallyObserved = new HashMap<>();
@@ -242,7 +242,7 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 									ret.add(Literal.parseLiteral(temp));
 
 									flag = true;
-									System.out.println("BREAKING__: " + this.numericSymbolMap);
+									//System.out.println("BREAKING__: " + this.numericSymbolMap);
 									break;
 								}
 							}
@@ -277,7 +277,7 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 			if(literal.toString().startsWith("~")) negativePredicates.add(Literal.parseLiteral(literal.toString().replaceFirst("~", "")));
 			else positivePredicates.add(literal);
 		}
-		System.out.println("Beliefs befire removal: " + returnValues);
+		//System.out.println("Beliefs befire removal: " + returnValues);
 
 
 		for (Literal predicate : negativePredicates) {
@@ -300,7 +300,7 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 			}
 		}
 
-		System.out.println("Beliefs after removal: " + returnValues);
+		//System.out.println("Beliefs after removal: " + returnValues);
 
 		Map<String, String> numericSymbolMapping = new HashMap<>();
 		for(String key : ranges.keySet()){
@@ -337,7 +337,7 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 			}
 			returnValues.add(ret);
 		}
-		System.out.println("Beliefs after creating oneOfs:" + returnValues);
+		//System.out.println("Beliefs after creating oneOfs:" + returnValues);
 		return returnValues;
 	}
 
@@ -350,49 +350,50 @@ public class NDCPCESPlannerConverter implements PlannerConverter {
 	public boolean executePlanner(ProblemObjects objects, StartState startState, GoalState goalState, ProblemOperators operators, int maxPlanSteps) {
 		AgentSpeakToPDDL pddlCreator = new AgentSpeakToPDDL();
 
-		double startStep2 = System.currentTimeMillis();
+		//double startStep2 = System.currentTimeMillis();
 
 		pddlCreator.generatePONDPDDL(objects, this.alwaysObserved, this.partiallyObserved, goalState, operators);
 		try {
 
-			double plannerStarting = System.currentTimeMillis();
+			//double plannerStarting = System.currentTimeMillis();
 
 			String[] command = new String[]{
-					"ndcpces", "-o" , "mapcD.pddl", "-f" , "mapcP.pddl"
+					"ndcpces", "-o" , "domain.pddl", "-f" , "task.pddl"
 			};
 			Process proc = new ProcessBuilder(command).start();
 
 			BufferedReader reader = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 
 			String policy = "";
+
 			String line = "";
 			while ((line = reader.readLine()) != null) {
 				policy += line + "\n";
-				//System.out.println(line + "\n");
+				System.out.println(line + "\n");
 			}
 			// Reading the error output
-			//BufferedReader errorReader = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
+			BufferedReader errorReader = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
 			String errorLine = "";
-			//while ((errorLine = errorReader.readLine()) != null) {
-				//logger.warning("***NDCPCES TRANSLATION ERROR***: " + errorLine);
-			//}
-			//proc.waitFor();
+			while ((errorLine = errorReader.readLine()) != null) {
+				logger.warning("***NDCPCES TRANSLATION ERROR***: " + errorLine);
+			}
+			proc.waitFor();
 
-			double step2Done = System.currentTimeMillis();
+			//double step2Done = System.currentTimeMillis();
 
 			parseNDCPCES(policy);
 
-			double step3Done = System.currentTimeMillis();
+			//double step3Done = System.currentTimeMillis();
 
 			//System.out.println("Planning Time: " + (afterPlanner-startTime));
 			//System.out.println("Plan Generation Time: " + (afterParse-afterPlanner));
 
-			System.out.println("TIMETAKEN GENERATE PDDL (STEP 2): " + (plannerStarting-startStep2));
-			System.out.println("TIMETAKEN PLANNER RUNNING (STEP 2): " + (step2Done-plannerStarting));
-			System.out.println("TIMETAKEN GENERATE PLANS (STEP 3): " + (step3Done-step2Done));
+			//System.out.println("TIMETAKEN GENERATE PDDL (STEP 2): " + (plannerStarting-startStep2));
+			//System.out.println("TIMETAKEN PLANNER RUNNING (STEP 2): " + (step2Done-plannerStarting));
+			//System.out.println("TIMETAKEN GENERATE PLANS (STEP 3): " + (step3Done-step2Done));
 
-		} catch (IOException e){
-			logger.warning("IOException: " + e.getMessage());
+		} catch (IOException | InterruptedException e){
+			logger.warning("Exception: " + e.getMessage());
 			return false;
 		}
 
